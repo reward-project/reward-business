@@ -8,10 +8,11 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../../widgets/common/language_dropdown.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/dio_service.dart';
+import '../../utils/responsive.dart';
 
 class SignInPage extends StatefulWidget {
   final Locale? locale;
-  
+
   const SignInPage({super.key, this.locale});
 
   @override
@@ -140,7 +141,8 @@ class _SignInPageState extends State<SignInPage> {
                           borderRadius: BorderRadius.circular(kBorderRadius),
                         ),
                       ),
-                      child: Text(AppLocalizations.of(context).verifyCodeButton),
+                      child:
+                          Text(AppLocalizations.of(context).verifyCodeButton),
                     ),
                     if (_timeLeft > 0) ...[
                       const SizedBox(height: 4),
@@ -192,7 +194,8 @@ class _SignInPageState extends State<SignInPage> {
       return;
     }
 
-    final response = await _dio.post('/members/verify/send', 
+    final response = await _dio.post(
+      '/members/verify/send',
       queryParameters: {
         'email': _emailController.text,
       },
@@ -209,7 +212,8 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   Future<void> _handleCodeVerification() async {
-    final response = await _dio.post('/members/verify/check',
+    final response = await _dio.post(
+      '/members/verify/check',
       queryParameters: {
         'email': _emailController.text,
         'code': _verificationCodeController.text,
@@ -236,7 +240,7 @@ class _SignInPageState extends State<SignInPage> {
     }
 
     if (_formKey.currentState!.validate()) {
-      final response = await _dio.post('/members/signup/user', data: {
+      final response = await _dio.post('/members/signup/business', data: {
         "name": _nameController.text,
         "email": _emailController.text,
         "password": _passwordController.text,
@@ -260,7 +264,7 @@ class _SignInPageState extends State<SignInPage> {
     setState(() {
       _timeLeft = 300; // 5분
     });
-    
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_timeLeft > 0) {
@@ -291,26 +295,47 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isWebLayout = MediaQuery.of(context).size.width > 768;
-
-    if (isWebLayout) {
-      return Scaffold(
-        body: Row(
-          children: [
+    return Scaffold(
+      body: Row(
+        children: [
+          if (!isMobile(context))
             Expanded(
-              flex: 2,
+              flex: isDesktop(context) ? 2 : 1,
               child: Container(
                 color: Colors.green.shade600,
                 child: _buildSideMenu(),
               ),
             ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                height: MediaQuery.of(context).size.height,
-                color: Colors.white,
-                child: Stack(
-                  children: [
+          Expanded(
+            flex: isDesktop(context) ? 1 : 2,
+            child: Container(
+              height: MediaQuery.of(context).size.height,
+              color: Colors.white,
+              child: Stack(
+                children: [
+                  if (isMobile(context))
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: AppBar(
+                        backgroundColor: Colors.transparent,
+                        elevation: 0,
+                        leading: IconButton(
+                          icon: const Icon(Icons.arrow_back),
+                          onPressed: () {
+                            final currentLocale =
+                                Localizations.localeOf(context).languageCode;
+                            context.go('/$currentLocale/login');
+                          },
+                        ),
+                        actions: const [
+                          LanguageDropdown(),
+                          SizedBox(width: 8),
+                        ],
+                      ),
+                    ),
+                  if (!isMobile(context))
                     Positioned(
                       top: 16,
                       right: 16,
@@ -323,75 +348,37 @@ class _SignInPageState extends State<SignInPage> {
                         child: const LanguageDropdown(),
                       ),
                     ),
+                  if (!isMobile(context))
                     Positioned(
                       top: 16,
                       left: 16,
                       child: TextButton.icon(
                         onPressed: () {
-                          final currentLocale = Localizations.localeOf(context).languageCode;
+                          final currentLocale =
+                              Localizations.localeOf(context).languageCode;
                           context.go('/$currentLocale/login');
                         },
                         icon: const Icon(Icons.arrow_back),
                         label: Text(AppLocalizations.of(context).loginTitle),
                       ),
                     ),
-                    Center(
-                      child: SingleChildScrollView(
-                        child: Container(
-                          padding: const EdgeInsets.all(32),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 400),
-                            child: _buildSignInForm(),
-                          ),
+                  Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(isMobile(context) ? 16 : 32),
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: isMobile(context) ? double.infinity : 400,
                         ),
+                        child: _buildSignInForm(),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      );
-    } else {
-      return Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 8.0,
-                ),
-                margin: const EdgeInsets.only(top: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, size: 28),
-                        onPressed: () {
-                          final currentLocale = Localizations.localeOf(context).languageCode;
-                          context.go('/$currentLocale/login');
-                        },
-                      ),
-                    ),
-                    const LanguageDropdown(),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: _buildSignInForm(),
-                ),
-              ),
-            ],
           ),
-        ),
-      );
-    }
+        ],
+      ),
+    );
   }
 }

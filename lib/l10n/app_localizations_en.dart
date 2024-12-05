@@ -86,4 +86,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginSuccess => 'Login successful';
+
+  @override
+  String get rewardAppLink => 'Reward App Link';
 }

@@ -73,7 +73,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get emailVerifySuccess => '이메일 인증이 완료되었습니다';
 
   @override
-  String get emailVerifyFail => '이메�� 인증에 실패했습니다';
+  String get emailVerifyFail => '이메일 인증에 실패했습니다';
 
   @override
   String get signupSuccess => '회원가입이 완료되었습니다';
@@ -86,4 +86,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get loginSuccess => '로그인이 완료되었습니다';
+
+  @override
+  String get rewardAppLink => '리워드 앱 링크';
 }
