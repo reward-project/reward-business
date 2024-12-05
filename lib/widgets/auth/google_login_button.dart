@@ -16,7 +16,7 @@ import '../../providers/auth_provider.dart';
 class GoogleLoginButton extends StatelessWidget {
   final String role; // 'user', 'business', 'admin' 중 하나
 
-  const GoogleLoginButton({super.key, this.role = 'user' // 기본값은 일반 사용자
+  const GoogleLoginButton({super.key, this.role = 'business' // 기본값은 일반 사용자
       });
 
   Future<void> _handleGoogleLogin(BuildContext context) async {
