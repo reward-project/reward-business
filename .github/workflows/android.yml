@@ -1,0 +1,77 @@
+# name: Flutter CI/CD
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# # 권한 설정 추가
+# permissions:
+#   contents: write  # 저장소 콘텐츠에 대한 쓰기 권한
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
+
+
+#       - name: Setup Java 17
+#         uses: actions/setup-java@v3
+#         with:
+#           distribution: 'zulu'
+#           java-version: '17'
+
+#       - name: Install Flutter
+#         uses: subosito/flutter-action@v2
+#         with:
+#           flutter-version: '3.24.5' # 원하는 Flutter 버전을 입력
+#           channel: stable
+#       - name: Decode Keystore
+#         run: |
+#           echo "$KEYSTORE_BASE64" | base64 -d > "$HOME/keystore.jks"
+#         env:
+#           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+#       - name: Create key.properties
+#         run: |
+#           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> android/key.properties
+#           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+#           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+#           echo "storeFile=$HOME/keystore.jks" >> android/key.properties
+
+#       - name: Build appbundle
+#         run: flutter build appbundle --dart-define=ENV=prod --release
+
+#       - name: Increment version
+#         run: |
+#           # pubspec.yaml에서 현재 버전 읽기
+#           VERSION=$(grep 'version:' pubspec.yaml | sed 's/version: //')
+#           VERSION_NAME=$(echo $VERSION | cut -d'+' -f1)
+#           VERSION_CODE=$(echo $VERSION | cut -d'+' -f2)
+          
+#           # 버전 코드 증가
+#           NEW_VERSION_CODE=$((VERSION_CODE + 1))
+          
+#           # pubspec.yaml 업데이트
+#           sed -i "s/version: .*/version: $VERSION_NAME+$NEW_VERSION_CODE/" pubspec.yaml
+          
+#           # 변경사항 커밋
+#           git config --global user.email "github-actions@github.com"
+#           git config --global user.name "GitHub Actions"
+#           git add pubspec.yaml
+#           git commit -m "Bump version to $VERSION_NAME+$NEW_VERSION_CODE [skip ci]"
+#           git push "https://${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+#       - name: Deploy to Google Play
+#         uses: r0adkll/upload-google-play@v1
+#         with:
+#           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+#           packageName: com.outsider.reward
+#           releaseFiles: build/app/outputs/bundle/release/app-release.aab
+#           track: internal
+#           status: draft

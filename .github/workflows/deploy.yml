@@ -1,0 +1,41 @@
+name: Deploy Flutter Web to Vercel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: stable
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Build web
+      run: flutter build web --dart-define=ENV=prod --dart-define=API_BASE_URL=https://backend.reward-factory.shop:8765 --dart-define=GOOGLE_WEB_CLIENT_ID=133048024494-v9q4qimam6cl70set38o8tdbj3mcr0ss.apps.googleusercontent.com --dart-define=GOOGLE_ANDROID_CLIENT_ID=133048024494-s3hl3npre9hrmqeokp4pqp36me559o50.apps.googleusercontent.com
+
+    - name: Create vercel.json
+      run: |
+        cat > build/web/vercel.json << 'EOF'
+        {
+          "rewrites": [
+            { "source": "/(.*)", "destination": "/index.html" }
+          ]
+        }
+        EOF
+
+    - name: Deploy to Vercel
+      run: |
+        mv build/web build/reward-business
+        cd build/reward-business
+        npx vercel deploy --prod --force --token=${{ secrets.VERCEL_TOKEN }} --yes

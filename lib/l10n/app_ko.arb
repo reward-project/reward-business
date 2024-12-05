@@ -1,0 +1,39 @@
+{
+  "@@locale": "ko",
+  "appTitle": "리워드 팩토리",
+  
+  "loginTitle": "로그인",
+  "emailLabel": "이메일",
+  "passwordLabel": "비밀번호",
+  "loginButton": "로그인",
+  "signInWithGoogle": "구글로 로그인",
+  "noAccount": "계정이 없으신가요?",
+  "signUpButton": "회원가입",
+  
+  "signUpTitle": "회원가입",
+  "nameLabel": "이름",
+  "nicknameLabel": "닉네임",
+  "verifyEmailButton": "이메일 인증",
+  "verificationCodeLabel": "인증 코드",
+  "verifyCodeButton": "인증 확인",
+  
+  "emailRequired": "이메일을 입력해주세요",
+  "passwordRequired": "비밀번호를 입력해주세요",
+  "nameRequired": "이름을 입력해주세요",
+  "nicknameRequired": "닉네임을 입력해주세요",
+  "emailVerificationRequired": "이메일 인증이 필요합니다",
+  
+  "emailSendSuccess": "인증 코드가 발송되었습니다",
+  "emailSendFail": "인증 코드 발송에 실패했습니다",
+  "emailVerifySuccess": "이메일 인증이 완료되었습니다",
+  "emailVerifyFail": "이메일 인증에 실패했습니다",
+  "signupSuccess": "회원가입이 완료되었습니다",
+  "signupFail": "회원가입에 실패했습니다",
+  
+  "loginSuccess": "로그인이 완료되었습니다",
+  "networkError": "네트워크 오류가 발생했습니다. 다시 시도해주세요.",
+  "loginFail": "로그인에 실패했습니다",
+  "rememberCredentials": "이메일/비밀번호 저장",
+  "loginDescription": "리워드 서비스를 이용하려면 로그인이 필요합니다."
+  
+} 
