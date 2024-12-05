@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/reward.dart';
 import '../../services/dio_service.dart';
 import '../../providers/auth_provider.dart';
@@ -49,169 +50,244 @@ class _InspectListingPageState extends State<InspectListingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () {
+            final currentLocale = Localizations.localeOf(context).languageCode;
+            context.go('/$currentLocale/home');
+          },
+        ),
+        title: Text(
+          '리워드 관리',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 헤더
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    '리워드 관리: ${context.read<AuthProvider>().user?.userName ?? ""}',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // 사용자 정보 카드와 버튼들
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+              // 상단 정보 카드
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 2,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                                '사용자: ${context.read<AuthProvider>().user?.userName ?? ""}'),
-                            const Text('슬롯 전체 개수: 50'),
-                            const Text('전체 개수중 가용 개수: 5'),
-                            const Text('등록자: A1'),
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: Colors.blue.shade50,
+                                  child: const Icon(Icons.person, color: Colors.blue),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.read<AuthProvider>().user?.userName ?? "",
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      '관리자',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+                            _buildInfoItem(
+                              icon: Icons.inventory_2,
+                              label: '슬롯 전체 개수',
+                              value: '50',
+                            ),
+                            const SizedBox(height: 12),
+                            _buildInfoItem(
+                              icon: Icons.check_circle,
+                              label: '가용 개수',
+                              value: '5',
+                              valueColor: Colors.green,
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Row(
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Column(
                           children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () {},
-                                child: const Text('사용자변경'),
+                            OutlinedButton.icon(
+                              onPressed: () {},
+                              icon: const Icon(Icons.swap_horiz),
+                              label: const Text('사용자 변경'),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 24,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: TextField(
-                                decoration: InputDecoration(
-                                  hintText: 'KKY',
-                                  border: OutlineInputBorder(),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                final currentLocale = Localizations.localeOf(context).languageCode;
+                                context.go('/$currentLocale/sales/reward-write');
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('리워드 추가'),
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                  horizontal: 24,
+                                ),
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.add),
-                            label: const Text('리워드 추가 신청하기'),
-                            onPressed: () {
-                              // 리워드 추가 페이지로 이동
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
               const SizedBox(height: 24),
-
-              // 검색 및 액션 버튼
+              
+              // 검색 및 필터 영역
               Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'KKY 검색',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        hintText: '리워드 검색',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.blue),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   ElevatedButton.icon(
-                    icon: const Icon(Icons.delete),
+                    icon: const Icon(Icons.delete_outline),
                     label: const Text('선택 삭제'),
-                    onPressed: selectedRewards.isEmpty
-                        ? null
-                        : () {
-                            // 선택된 항목 삭제 로직
-                          },
+                    onPressed: selectedRewards.isEmpty ? null : () {},
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 24,
+                      ),
                       backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-
+              
               // 데이터 테이블
-              SizedBox(
-                width: double.infinity,
-                height: 600, // 테이블 높이 지정
-                child: Card(
-                  child: DataTable2(
-                    columns: const [
-                      DataColumn2(label: Text('선택'), size: ColumnSize.S),
-                      DataColumn2(label: Text('No'), size: ColumnSize.S),
-                      DataColumn2(label: Text('사용자ID')),
-                      DataColumn2(label: Text('리워드ID')),
-                      DataColumn2(label: Text('관리자')),
-                      DataColumn2(label: Text('생성여부')),
-                      DataColumn2(label: Text('상품URL')),
-                      DataColumn2(label: Text('키워드')),
-                      // ... 나머지 컬럼들
-                    ],
-                    rows: salesRewards.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final reward = entry.value;
-                      return DataRow(
-                        cells: [
-                          DataCell(Checkbox(
-                            value: selectedRewards.contains(reward.rewardId),
-                            onChanged: (bool? value) {
-                              setState(() {
-                                if (value == true) {
-                                  selectedRewards.add(reward.rewardId);
-                                } else {
-                                  selectedRewards.remove(reward.rewardId);
-                                }
-                              });
-                            },
-                          )),
-                          DataCell(Text('${index + 1}')),
-                          DataCell(Text(reward.advertiserId)),
-                          DataCell(Text(reward.rewardId)),
-                          DataCell(Text(
-                              context.read<AuthProvider>().user?.userName ??
-                                  "")),
-                          DataCell(Text(reward.rewardStatus)),
-                          DataCell(Text(reward.productUrl)),
-                          DataCell(Text(reward.keyword)),
-                          // ... 나머지 셀들
-                        ],
-                      );
-                    }).toList(),
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Container(
+                  height: 400,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: DataTable2(
+                      columnSpacing: 12,
+                      horizontalMargin: 12,
+                      minWidth: 600,
+                      smRatio: 0.75,
+                      lmRatio: 1.5,
+                      columns: const [
+                        DataColumn2(label: Text('선택'), size: ColumnSize.S),
+                        DataColumn2(label: Text('No'), size: ColumnSize.S),
+                        DataColumn2(label: Text('사용자ID')),
+                        DataColumn2(label: Text('리워드ID')),
+                        DataColumn2(label: Text('관리자')),
+                        DataColumn2(label: Text('생성여부')),
+                        DataColumn2(label: Text('상품URL')),
+                        DataColumn2(label: Text('키워드')),
+                      ],
+                      rows: salesRewards.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final reward = entry.value;
+                        return DataRow(
+                          cells: [
+                            DataCell(Checkbox(
+                              value: selectedRewards.contains(reward.rewardId),
+                              onChanged: (bool? value) {
+                                setState(() {
+                                  if (value == true) {
+                                    selectedRewards.add(reward.rewardId);
+                                  } else {
+                                    selectedRewards.remove(reward.rewardId);
+                                  }
+                                });
+                              },
+                            )),
+                            DataCell(Text('${index + 1}')),
+                            DataCell(Text(reward.advertiserId)),
+                            DataCell(Text(reward.rewardId)),
+                            DataCell(Text(
+                                context.read<AuthProvider>().user?.userName ??
+                                    "")),
+                            DataCell(Text(reward.rewardStatus)),
+                            DataCell(Text(reward.productUrl)),
+                            DataCell(Text(reward.keyword)),
+                          ],
+                        );
+                      }).toList(),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade200),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
+                    ),
                   ),
                 ),
               ),
@@ -219,6 +295,36 @@ class _InspectListingPageState extends State<InspectListingPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey.shade600),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor ?? Colors.black87,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
     );
   }
 }
