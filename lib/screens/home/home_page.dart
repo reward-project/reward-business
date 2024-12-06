@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
     return InkWell(
       onTap: () {
         final currentLocale = Localizations.localeOf(context).languageCode;
-        context.go('/$currentLocale/sales/inspect-listing');
+        context.go('/$currentLocale/sales/store-mission');
       },
       child: Card(
         elevation: 4,
@@ -330,7 +330,7 @@ class HomePage extends StatelessWidget {
                 leading: const Icon(Icons.view_list),
                 title: const Text('리워드 목록'),
                 contentPadding: const EdgeInsets.only(left: 72),
-                onTap: () => context.go('/$currentLocale/sales/inspect-listing'),
+                onTap: () => context.go('/$currentLocale/sales/store-mission'),
               ),
               ListTile(
                 leading: const Icon(Icons.add_circle_outline),

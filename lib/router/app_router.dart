@@ -5,7 +5,7 @@ import '../screens/auth/login_page.dart';
 import '../screens/auth/signin_page.dart';
 import '../screens/auth/auth_callback_page.dart';
 import '../screens/home/home_page.dart';
-import '../screens/sales/inspect_listing_page.dart';
+import '../screens/sales/store_mission_list_page.dart';
 import '../screens/sales/reward_write_page.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -105,8 +105,8 @@ final router = GoRouter(
       builder: (context, state) => const AuthCallbackPage(),
     ),
     GoRoute(
-      path: '/:locale/sales/inspect-listing',
-      builder: (context, state) => const InspectListingPage(),
+      path: '/:locale/sales/store-mission',
+      builder: (context, state) => const StoreMissionListPage(),
     ),
     GoRoute(
       path: '/:locale/sales/reward-write',

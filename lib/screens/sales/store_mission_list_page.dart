@@ -6,14 +6,14 @@ import '../../models/reward.dart';
 import '../../services/dio_service.dart';
 import '../../providers/auth_provider.dart';
 
-class InspectListingPage extends StatefulWidget {
-  const InspectListingPage({super.key});
+class StoreMissionListPage extends StatefulWidget {
+  const StoreMissionListPage({super.key});
 
   @override
-  State<InspectListingPage> createState() => _InspectListingPageState();
+  State<StoreMissionListPage> createState() => _StoreMissionListPageState();
 }
 
-class _InspectListingPageState extends State<InspectListingPage> {
+class _StoreMissionListPageState extends State<StoreMissionListPage> {
   List<Reward> salesRewards = [];
   final Set<String> selectedRewards = {};
   bool selectAll = false;
