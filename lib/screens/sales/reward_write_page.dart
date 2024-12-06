@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/store_mission_service.dart';
 import '../../services/reward_service.dart';
+import '../../services/platform_service.dart';
+import '../../models/platform/platform.dart';
 
 class RewardWritePage extends StatefulWidget {
   const RewardWritePage({super.key});
@@ -25,14 +27,18 @@ class _RewardWritePageState extends State<RewardWritePage> {
   final _maxRewardsPerDayController = TextEditingController();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
+  final _platformService = PlatformService();
 
   String? _selectedPlatform;
+  String? _selectedDomain;
   DateTime? _startDate;
   DateTime? _endDate;
   double _cpcAmount = 0;
   double _totalMaxAmount = 0;
-
-  final List<String> platforms = ['쿠팡', '네이버', '지마켓'];
+  List<Platform> _platforms = [];
+  List<Map<String, dynamic>> _domains = [];
+  bool _isLoadingPlatforms = false;
+  bool _isLoadingDomains = false;
 
   @override
   void initState() {
@@ -51,21 +57,67 @@ class _RewardWritePageState extends State<RewardWritePage> {
         _handleDateInput(_endDateController.text, false);
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPlatforms();
+    });
   }
 
-  @override
-  void dispose() {
-    _rewardNameController.dispose();
-    _storeNameController.dispose();
-    _productLinkController.dispose();
-    _keywordController.dispose();
-    _productIdController.dispose();
-    _optionIdController.dispose();
-    _rewardAmountController.dispose();
-    _maxRewardsPerDayController.dispose();
-    _startDateController.dispose();
-    _endDateController.dispose();
-    super.dispose();
+  Future<void> _loadPlatforms() async {
+    setState(() {
+      _isLoadingPlatforms = true;
+    });
+
+    try {
+      final platforms = await _platformService.getPlatforms(context);
+      setState(() {
+        _platforms = platforms;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoadingPlatforms = false;
+      });
+    }
+  }
+
+  Future<void> _loadPlatformDomains(String platformId) async {
+    setState(() {
+      _isLoadingDomains = true;
+      _selectedDomain = null;
+      _domains = [];
+    });
+
+    try {
+      final domains = await _platformService.getPlatformDomains(context, platformId);
+      setState(() {
+        _domains = domains;
+        if (domains.isNotEmpty) {
+          _selectedDomain = domains[0]['domain'];
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('도메인 목록을 불러오는데 실패했습니다: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoadingDomains = false;
+      });
+    }
   }
 
   String _formatDate(String value) {
@@ -352,33 +404,53 @@ class _RewardWritePageState extends State<RewardWritePage> {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: const Color(0xFFD0D5DD)),
                             ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedPlatform,
-                                hint: const Text(
-                                  '플랫폼을 선택해주세요',
-                                  style: TextStyle(color: Color(0xFF667085)),
-                                ),
-                                isExpanded: true,
-                                items: platforms.map((String platform) {
-                                  return DropdownMenuItem<String>(
-                                    value: platform,
-                                    child: Text(platform),
-                                  );
-                                }).toList(),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    _selectedPlatform = newValue;
-                                  });
-                                },
-                              ),
-                            ),
+                            child: _isLoadingPlatforms
+                                ? const Center(
+                                    child: SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                : DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: _selectedPlatform,
+                                      hint: const Text(
+                                        '플랫폼을 선택해주세요',
+                                        style: TextStyle(color: Color(0xFF667085)),
+                                      ),
+                                      isExpanded: true,
+                                      items: _platforms.map((Platform platform) {
+                                        return DropdownMenuItem<String>(
+                                          value: platform.name,
+                                          child: Text(platform.displayName ?? platform.name),
+                                        );
+                                      }).toList(),
+                                      onChanged: (String? newValue) {
+                                        setState(() {
+                                          _selectedPlatform = newValue;
+                                          if (newValue != null) {
+                                            final platform = _platforms.firstWhere(
+                                              (p) => p.name == newValue,
+                                            );
+                                            _loadPlatformDomains(platform.id.toString());
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(
                           onPressed: () {
-                            context.push('/platform/register');
+                            final locale = Localizations.localeOf(context).languageCode;
+                            context.push('/$locale/platform/register').then((_) {
+                              // Refresh platforms list when returning from registration
+                              _loadPlatforms();
+                            });
                           },
                           icon: const Icon(Icons.add, size: 20),
                           label: const Text('플랫폼 추가'),
@@ -396,17 +468,119 @@ class _RewardWritePageState extends State<RewardWritePage> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                _buildInputField(
-                  label: '상품 링크',
-                  controller: _productLinkController,
-                  placeholder: 'https://example.com/product',
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) return '상품 링크를 입력해주세요';
-                    if (!Uri.tryParse(value!)!.isAbsolute) {
-                      return '올바른 URL을 입력해주세요';
-                    }
-                    return null;
-                  },
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '상품 링크',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF344054),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: const BorderRadius.horizontal(
+                                left: Radius.circular(8),
+                              ),
+                              border: Border.all(color: const Color(0xFFD0D5DD)),
+                            ),
+                            child: _isLoadingDomains
+                                ? const Center(
+                                    child: SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                  )
+                                : DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: _selectedDomain,
+                                      hint: const Text(
+                                        '도메인 선택',
+                                        style: TextStyle(color: Color(0xFF667085)),
+                                      ),
+                                      isExpanded: true,
+                                      items: _domains.map((domain) {
+                                        return DropdownMenuItem<String>(
+                                          value: domain['domain'],
+                                          child: Text(domain['domain']),
+                                        );
+                                      }).toList(),
+                                      onChanged: _selectedPlatform == null
+                                          ? null
+                                          : (String? newValue) {
+                                              setState(() {
+                                                _selectedDomain = newValue;
+                                              });
+                                            },
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: TextFormField(
+                            controller: _productLinkController,
+                            decoration: InputDecoration(
+                              hintText: '상품 링크를 입력하세요',
+                              hintStyle: const TextStyle(color: Color(0xFF667085)),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: const BorderRadius.horizontal(
+                                  right: Radius.circular(8),
+                                ),
+                                borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.horizontal(
+                                  right: Radius.circular(8),
+                                ),
+                                borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.horizontal(
+                                  right: Radius.circular(8),
+                                ),
+                                borderSide: BorderSide(color: Theme.of(context).primaryColor),
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: const BorderRadius.horizontal(
+                                  right: Radius.circular(8),
+                                ),
+                                borderSide: const BorderSide(color: Colors.red),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return '상품 링크를 입력해주세요.';
+                              }
+                              if (_selectedDomain == null) {
+                                return '도메인을 선택해주세요.';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 _buildInputField(
@@ -454,7 +628,7 @@ class _RewardWritePageState extends State<RewardWritePage> {
                 ),
                 const SizedBox(height: 24),
                 _buildInputField(
-                  label: '리워드 단가 (원)',
+                  label: '리워드 입찰가 (원)',
                   controller: _rewardAmountController,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -504,11 +678,11 @@ class _RewardWritePageState extends State<RewardWritePage> {
                 ],
                 const SizedBox(height: 16),
                 _buildInputField(
-                  label: '하루 최대 리워드 수',
+                  label: '하루 최대 소진량',
                   controller: _maxRewardsPerDayController,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '하루 최대 리워드 수를 입력해주세요.';
+                      return '하루 최대 소진량을 입력해주세요.';
                     }
                     if (int.tryParse(value) == null) {
                       return '숫자만 입력해주세요.';
@@ -682,10 +856,10 @@ class _RewardWritePageState extends State<RewardWritePage> {
 
   void _handleSubmit() async {
     if (_formKey.currentState!.validate()) {
-      if (_startDate == null || _endDate == null || _selectedPlatform == null) {
+      if (_startDate == null || _endDate == null || _selectedPlatform == null || _selectedDomain == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('날짜와 플랫폼을 선택해주세요.'),
+            content: Text('날짜, 플랫폼, 도메인을 선택해주세요.'),
             backgroundColor: Colors.red,
           ),
         );

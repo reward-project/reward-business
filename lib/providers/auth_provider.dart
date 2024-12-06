@@ -78,11 +78,9 @@ class AuthProvider extends ChangeNotifier {
       ));
       final response = await dio.post(
         '/members/refresh',
-        options: Options(
-          headers: {
-            'Authorization-Refresh': 'Bearer $_refreshToken',
-          },
-        ),
+        data: {
+          'refreshToken': _refreshToken,
+        },
       );
 
       final apiResponse = ApiResponse.fromJson(
@@ -136,6 +134,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    final currentRefreshToken = _refreshToken;  // 현재 리프레시 토큰 저장
     _refreshTimer?.cancel();  // 타이머 중지
     _accessToken = null;
     _refreshToken = null;
@@ -146,16 +145,21 @@ class AuthProvider extends ChangeNotifier {
     await AuthService.logout();
 
     // 서버에 로그아웃 요청
-    try {
-      final dio = Dio(BaseOptions(
-        baseUrl: '${AppConfig.apiBaseUrl}${AppConfig.apiPath}',
-        extra: {'withCredentials': true},
-      ));
+    if (currentRefreshToken != null) {
+      try {
+        final dio = Dio(BaseOptions(
+          baseUrl: '${AppConfig.apiBaseUrl}${AppConfig.apiPath}',
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ));
 
-      await dio.post('/members/logout');
-    } catch (e) {
-      if (kDebugMode) {
-        print('Logout error: $e');
+        await dio.post(
+          '/members/logout',
+          data: {'refreshToken': currentRefreshToken},
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          print('Logout error: $e');
+        }
       }
     }
 
