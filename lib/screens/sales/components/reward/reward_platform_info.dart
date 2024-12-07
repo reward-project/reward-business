@@ -7,9 +7,9 @@ import 'package:go_router/go_router.dart';
 
 class RewardPlatformInfo extends StatelessWidget {
   final List<Platform> platforms;
-  final String? selectedPlatform;
+  final int? selectedPlatform;
   final bool isLoadingPlatforms;
-  final Function(String?) onPlatformChanged;
+  final Function(int?) onPlatformChanged;
   final TextEditingController productLinkController;
   final String? selectedDomain;
   final List<Map<String, dynamic>> domains;

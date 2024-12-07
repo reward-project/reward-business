@@ -3,6 +3,7 @@ import '../models/platform/platform.dart';
 import 'dio_service.dart';
 import 'package:dio/dio.dart';
 import '../config/app_config.dart';
+import 'dart:convert';
 
 class PlatformService {
   Future<Platform> registerPlatform(BuildContext context, String name,
@@ -47,14 +48,48 @@ class PlatformService {
   Future<List<Platform>> getPlatforms(BuildContext context) async {
     try {
       final dio = DioService.getInstance(context);
-      final response = await dio.get('/platforms/active');
+      print('Sending request to /api/v1/platforms/active');
 
-      return (response.data as List)
-          .map((json) => Platform.fromJson(json))
-          .toList();
-    } catch (e) {
-      throw Exception('플랫폼 목록 조회 중 오류가 발생했습니다: ${e.toString()}');
+      final response = await dio.get(
+        '/platforms/active',
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+          },
+        ),
+      );
+
+      print('Response headers: ${response.headers}');
+      print('Response status: ${response.statusCode}');
+      print('Response data type: ${response.data.runtimeType}');
+      print('Raw response data: ${response.data}');
+
+      if (response.data == null) {
+        throw Exception('Response data is null');
+      }
+
+      if (response.data is List) {
+        return (response.data as List)
+            .map((x) => Platform.fromJson(x as Map<String, dynamic>))
+            .toList();
+      }
+
+      throw Exception(
+          'Expected List but got ${response.data.runtimeType}: ${response.data}');
+    } catch (e, stackTrace) {
+      print('Error in getPlatforms: $e');
+      print('Stack trace: $stackTrace');
+      rethrow;
     }
+  }
+
+  static Exception _handleDioError(DioException e) {
+    if (e.response?.data != null && e.response?.data is Map) {
+      final errorData = e.response?.data as Map;
+      final message = errorData['message'] ?? 'Unknown error occurred';
+      return Exception(message);
+    }
+    return Exception('Failed to process request: ${e.message}');
   }
 
   Future<List<Platform>> searchPlatforms(

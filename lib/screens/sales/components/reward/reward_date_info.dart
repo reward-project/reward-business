@@ -55,6 +55,7 @@ class RewardDateInfo extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: RewardInputField(
@@ -102,11 +103,16 @@ class RewardDateInfo extends StatelessWidget {
                 validator: (value) => value?.isEmpty ?? true ? '종료일을 입력해주세요' : null,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.calendar_month, size: 24),
-              onPressed: onCalendarPressed,
-              color: Theme.of(context).primaryColor,
-              tooltip: '달력으로 선택',
+            Container(
+              height: 48,
+              alignment: Alignment.center,
+              child: IconButton(
+                icon: const Icon(Icons.calendar_month, size: 28),
+                onPressed: onCalendarPressed,
+                color: Theme.of(context).primaryColor,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              ),
             ),
           ],
         ),

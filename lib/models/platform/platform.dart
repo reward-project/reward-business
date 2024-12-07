@@ -1,53 +1,30 @@
 class Platform {
-  final int? id;
+  final int id;
   final String name;
-  final String? status;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
-  final String? displayName;
+  final String displayName;
+  final String status;
   final List<String> domains;
 
   Platform({
-    this.id,
+    required this.id,
     required this.name,
-    this.status,
-    this.createdAt,
-    this.updatedAt,
-    this.displayName,
-    required this.domains,
+    required this.displayName,
+    required this.status,
+    this.domains = const [],
   });
 
   factory Platform.fromJson(Map<String, dynamic> json) {
-    var rawId = json['id'];
-    int? parsedId;
-    if (rawId != null) {
-      if (rawId is int) {
-        parsedId = rawId;
-      } else if (rawId is String) {
-        parsedId = int.tryParse(rawId);
-      }
+    try {
+      return Platform(
+        id: json['id'] is String ? int.parse(json['id']) : json['id'],
+        name: json['name'] as String,
+        displayName: json['displayName'] as String,
+        status: json['status'] as String,
+        domains: List<String>.from(json['domains'] ?? []),
+      );
+    } catch (e) {
+      print('Error parsing Platform: $json');
+      rethrow;
     }
-
-    return Platform(
-      id: parsedId,
-      name: json['name'],
-      status: json['status'],
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
-      displayName: json['displayName'],
-      domains: List<String>.from(json['domains'] ?? []),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'status': status,
-      'createdAt': createdAt?.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
-      'displayName': displayName,
-      'domains': domains,
-    };
   }
 }

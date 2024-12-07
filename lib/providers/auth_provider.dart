@@ -20,23 +20,7 @@ class AuthProvider extends ChangeNotifier {
 
   UserInfo? get user {
     if (!_isAuthenticated) return null;
-    
-    if (_userInfo == null) {
-      fetchUserInfo().then((userInfo) {
-        if (userInfo != null) {
-          _userInfo = {
-            'id': userInfo.userId,
-            'name': userInfo.userName,
-            'email': userInfo.email,
-            'role': userInfo.role,
-          };
-          notifyListeners();
-        }
-      });
-      return null;
-    }
-    
-    return UserInfo.fromJson(_userInfo!);
+    return _userInfo != null ? UserInfo.fromJson(_userInfo!) : null;
   }
 
   Future<UserInfo?> fetchUserInfo() async {
@@ -225,7 +209,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _saveTokensToStorage() async {
-    if (!kIsWeb) {  // 웹이 아닌 경우만 저장
+    if (!kIsWeb) {  // 웹이 아닌 경우만 ���장
       if (_accessToken != null && _refreshToken != null) {
         await AuthService.saveTokens(
           accessToken: _accessToken!,
@@ -234,8 +218,6 @@ class AuthProvider extends ChangeNotifier {
       }
     }
   }
-
-
 
   // 앱 시작 시 호출되는 초기화 메서드
   Future<void> initializeAuth() async {
@@ -249,6 +231,22 @@ class AuthProvider extends ChangeNotifier {
       );
     }
     notifyListeners();
+  }
+
+  // 별도의 초기화 메서드로 분리
+  Future<void> initializeUserInfo() async {
+    if (_isAuthenticated && _userInfo == null) {
+      final userInfo = await fetchUserInfo();
+      if (userInfo != null) {
+        _userInfo = {
+          'id': userInfo.userId,
+          'name': userInfo.userName,
+          'email': userInfo.email,
+          'role': userInfo.role,
+        };
+        notifyListeners();
+      }
+    }
   }
 }
 

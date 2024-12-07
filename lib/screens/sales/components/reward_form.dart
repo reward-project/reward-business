@@ -38,7 +38,7 @@ class _RewardFormState extends State<RewardForm> {
   final _endDateController = TextEditingController();
   final _platformService = PlatformService();
 
-  String? _selectedPlatform;
+  int? _selectedPlatform;
   String? _selectedDomain;
   DateTime? _startDate;
   DateTime? _endDate;
@@ -88,10 +88,7 @@ class _RewardFormState extends State<RewardForm> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString())),
         );
       }
     } finally {
@@ -246,23 +243,18 @@ class _RewardFormState extends State<RewardForm> {
 
   void _handleSubmit() {
     if (widget.formKey.currentState!.validate()) {
-      if (_startDate == null ||
-          _endDate == null ||
-          _selectedPlatform == null ||
-          _selectedDomain == null) {
+      if (_startDate == null || _endDate == null || _selectedPlatform == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('날짜, 플랫폼, 도메인을 선택해주세요.'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('모든 필수 항목을 입력해주세요.')),
         );
         return;
       }
 
       final data = {
         'rewardName': _rewardNameController.text,
+        'platformId': _selectedPlatform,
         'storeName': _storeNameController.text,
-        'productLink': _productLinkController.text,
+        'productLink': _buildFullUrl(_selectedDomain, _productLinkController.text),
         'keyword': _keywordController.text,
         'productId': _productIdController.text,
         'optionId': _optionIdController.text,
@@ -270,8 +262,6 @@ class _RewardFormState extends State<RewardForm> {
         'maxRewardsPerDay': int.parse(_maxRewardsPerDayController.text),
         'startDate': _startDate,
         'endDate': _endDate,
-        'platform': _selectedPlatform,
-        'domain': _selectedDomain,
         'tags': _tags,
       };
 
@@ -306,6 +296,32 @@ class _RewardFormState extends State<RewardForm> {
     }
   }
 
+  bool _isValidUrl(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return uri.hasScheme && uri.hasAuthority;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  String _buildFullUrl(String? domain, String productLink) {
+    if (domain == null || domain.isEmpty || productLink.isEmpty) {
+      throw Exception('도메인과 상품 링크를 모두 입력해주세요.');
+    }
+
+    // 이미 전체 URL인 경우 그대로 반환
+    if (productLink.startsWith('http://') || productLink.startsWith('https://')) {
+      return productLink;
+    }
+
+    // 슬래시로 시작하지 않는 경우 추가
+    final cleanPath = productLink.startsWith('/') ? productLink : '/$productLink';
+    
+    // 도메인과 경로 결합하여 전체 URL 생성
+    return 'https://$domain$cleanPath';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Form(
@@ -318,23 +334,16 @@ class _RewardFormState extends State<RewardForm> {
             storeNameController: _storeNameController,
           ),
           const SizedBox(height: 24),
-          RewardTagInput(
-            tags: _tags,
-            onTagsChanged: (newTags) {
-              setState(() => _tags = newTags);
-            },
-          ),
-          const SizedBox(height: 24),
           RewardPlatformInfo(
             platforms: _platforms,
             selectedPlatform: _selectedPlatform,
             isLoadingPlatforms: _isLoadingPlatforms,
-            onPlatformChanged: (String? newValue) {
+            onPlatformChanged: (int? newValue) {
               setState(() {
                 _selectedPlatform = newValue;
                 if (newValue != null) {
                   final platform = _platforms.firstWhere(
-                    (p) => p.name == newValue,
+                    (p) => p.id == newValue,
                   );
                   _loadPlatformDomains(platform.id.toString());
                 }
@@ -408,6 +417,13 @@ class _RewardFormState extends State<RewardForm> {
               ),
             ),
           ],
+          const SizedBox(height: 24),
+          RewardTagInput(
+            tags: _tags,
+            onTagsChanged: (newTags) {
+              setState(() => _tags = newTags);
+            },
+          ),
           const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
