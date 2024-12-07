@@ -1,13 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../services/dio_service.dart';
-import '../models/store_mission/platform_info.dart';
-import '../models/store_mission/reward_info.dart';
-import '../models/store_mission/store_info.dart';
-import '../models/store_mission/registrant_info.dart';
-import '../models/store_mission/store_mission_response.dart';
 
-class StoreMissionService {
+class StoreMissionCommandService {
   static Future<Map<String, dynamic>> createStoreMission({
     required BuildContext context,
     required String rewardName,
@@ -26,25 +21,6 @@ class StoreMissionService {
   }) async {
     try {
       final dio = DioService.getInstance(context);
-
-      // 요청 데이터 로깅
-      debugPrint('Creating store mission with data:');
-      debugPrint({
-        'rewardName': rewardName,
-        'platformId': platformId,
-        'storeName': storeName,
-        'registrantName': registrantId,
-        'productLink': productLink,
-        'keyword': keyword,
-        'productId': productId,
-        'optionId': optionId,
-        'startDate': startDate.toIso8601String().split('T')[0],
-        'endDate': endDate.toIso8601String().split('T')[0],
-        'registrantId': registrantId,
-        'rewardAmount': rewardAmount,
-        'maxRewardsPerDay': maxRewardsPerDay,
-        'tags': tags,
-      }.toString());
 
       if (!Uri.parse(productLink).hasScheme) {
         throw Exception('올바른 URL 형식이 아닙니다. 전체 URL을 입력해주세요.');
@@ -70,57 +46,50 @@ class StoreMissionService {
         },
       );
 
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response data: ${response.data}');
-
       if (response.statusCode == 200) {
         return response.data;
       } else {
         throw Exception('리워드 등록에 실패했습니다. Status: ${response.statusCode}');
       }
+    } on DioException catch (e) {
+      debugPrint('Dio error creating store mission: ${e.message}');
+      throw _handleDioError(e);
     } catch (e) {
       debugPrint('Error creating store mission: $e');
       rethrow;
     }
   }
 
-
-  static Future<List<Map<String, dynamic>>> getStoreMissionsByTag(
-    BuildContext context,
-    String tag,
-  ) async {
+  static Future<void> updateMissionStatus({
+    required BuildContext context,
+    required String missionId,
+    required String newStatus,
+  }) async {
     try {
       final dio = DioService.getInstance(context);
-      final response = await dio.get('/store-missions/tags/$tag');
-      if (response.statusCode == 200 && response.data['success']) {
-        return List<Map<String, dynamic>>.from(response.data['data']);
-      }
-      return [];
+      await dio.patch(
+        '/store-missions/$missionId/status',
+        data: {'status': newStatus},
+      );
     } catch (e) {
-      debugPrint('Error getting store missions by tag: $e');
+      debugPrint('Error updating mission status: $e');
       rethrow;
     }
   }
 
-  static Future<List<String>> searchTags(
-      BuildContext context, String query) async {
+  static Future<void> deleteStoreMissions({
+    required BuildContext context,
+    required List<String> missionIds,
+  }) async {
     try {
       final dio = DioService.getInstance(context);
-      final response = await dio.get('/tags/search/private', queryParameters: {
-        'query': query,
-      });
-
-      if (response.statusCode == 200) {
-        if (response.data is Map) {
-          // ApiResponse로 감싸진 경우
-          final List<dynamic> tagsData = response.data['data'] ?? [];
-          return tagsData.map((tag) => tag.toString()).toList();
-        }
-      }
-      return [];
+      await dio.delete(
+        '/store-missions',
+        data: {'missionIds': missionIds},
+      );
     } catch (e) {
-      debugPrint('Error searching tags: $e');
-      return [];
+      debugPrint('Error deleting store missions: $e');
+      rethrow;
     }
   }
 

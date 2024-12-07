@@ -32,7 +32,7 @@ class AppConfig {
         'GOOGLE_WEB_CLIENT_ID',
         defaultValue: '',
       );
-  
+
   static String get googleAndroidClientId => const String.fromEnvironment(
         'GOOGLE_ANDROID_CLIENT_ID',
         defaultValue: '',

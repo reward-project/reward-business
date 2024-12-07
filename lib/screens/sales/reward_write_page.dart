@@ -15,6 +15,7 @@ class RewardWritePage extends StatefulWidget {
 class _RewardWritePageState extends State<RewardWritePage> {
   final _formKey = GlobalKey<FormState>();
   Map<String, dynamic> _formData = {};
+  String? _selectedDomain;
 
   Future<void> _handleSubmit(Map<String, dynamic> data) async {
     try {
@@ -107,6 +108,12 @@ class _RewardWritePageState extends State<RewardWritePage> {
           child: RewardForm(
             formKey: _formKey,
             onSubmit: _handleSubmit,
+            selectedDomain: _selectedDomain,
+            onDomainChanged: (String? domain) {
+              setState(() {
+                _selectedDomain = domain;
+              });
+            },
           ),
         ),
       ),

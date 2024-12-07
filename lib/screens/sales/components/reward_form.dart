@@ -14,11 +14,15 @@ import 'reward/reward_tag_input.dart';
 class RewardForm extends StatefulWidget {
   final GlobalKey<FormState> formKey;
   final Function(Map<String, dynamic>) onSubmit;
+  final String? selectedDomain;
+  final Function(String?) onDomainChanged;
 
   const RewardForm({
     Key? key,
     required this.formKey,
     required this.onSubmit,
+    required this.selectedDomain,
+    required this.onDomainChanged,
   }) : super(key: key);
 
   @override
@@ -222,7 +226,7 @@ class _RewardFormState extends State<RewardForm> {
                 ),
               ),
               Text(
-                '• 리워드 단가에 수수료가 포함된 금액입니다.',
+                '• 리워드 단가에 수수료가 포함�� 금액입니다.',
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.5,

@@ -10,6 +10,7 @@ import '../screens/sales/reward_write_page.dart';
 import '../screens/platform/platform_register_page.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../screens/tags/tag_share_page.dart';
 
 final router = GoRouter(
   initialLocation: '/',
@@ -116,6 +117,12 @@ final router = GoRouter(
     GoRoute(
       path: '/:locale/platform/register',
       builder: (context, state) => const PlatformRegisterPage(),
+    ),
+    GoRoute(
+      path: '/:locale/tags/:tagId/share',
+      builder: (context, state) => TagSharePage(
+        tagId: state.pathParameters['tagId']!,
+      ),
     ),
   ],
 );

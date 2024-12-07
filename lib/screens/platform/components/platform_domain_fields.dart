@@ -8,15 +8,15 @@ class PlatformDomainFields extends StatelessWidget {
   final List<TextEditingController> domainControllers;
   final Platform? selectedPlatform;
   final List<Map<String, dynamic>>? existingDomains;
-  final VoidCallback onAddDomain;
+  final Function onAddDomain;
   final Function(int) onRemoveDomain;
 
-  const PlatformDomainFields({
+  PlatformDomainFields({
     Key? key,
+    required this.onAddDomain,
     required this.domainControllers,
     required this.selectedPlatform,
     required this.existingDomains,
-    required this.onAddDomain,
     required this.onRemoveDomain,
   }) : super(key: key);
 
@@ -27,20 +27,41 @@ class PlatformDomainFields extends StatelessWidget {
       children: [
         const DomainHeader(),
         const SizedBox(height: 6),
-        ...domainControllers.asMap().entries.map((entry) {
-          return DomainField(
-            controller: entry.value,
-            index: entry.key,
-            isLastField: entry.key == domainControllers.length - 1,
-            onAdd: onAddDomain,
-            onRemove: () => onRemoveDomain(entry.key),
-          );
-        }).toList(),
-        if (selectedPlatform != null) ...[
+        if (selectedPlatform == null) ...[
+          ...domainControllers.asMap().entries.map((entry) {
+            return DomainField(
+              index: entry.key,
+              controller: entry.value,
+              onRemove: () => onRemoveDomain(entry.key),
+              isLastField: entry.key == domainControllers.length - 1,
+              onAdd: () {
+                onAddDomain();
+              },
+            );
+          }).toList(),
+        ] else if (selectedPlatform != null && existingDomains != null) ...[
+          DomainStatusList(domains: existingDomains!),
           const SizedBox(height: 16),
-          DomainStatusList(domains: existingDomains),
+          Text(
+            '새로운 도메인 추가',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
+          ...domainControllers.asMap().entries.map((entry) {
+            return DomainField(
+              index: entry.key,
+              controller: entry.value,
+              onRemove: () => onRemoveDomain(entry.key),
+              isLastField: entry.key == domainControllers.length - 1,
+              onAdd: () {
+                onAddDomain();
+              },
+            );
+          }).toList(),
         ],
       ],
     );
   }
-} 
+}

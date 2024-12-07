@@ -115,19 +115,6 @@ class _PlatformRegisterPageState extends State<PlatformRegisterPage> {
       _selectedPlatform = platform;
       _platformNameController.text = platform.name ?? '';
       _displayNameController.text = platform.displayName ?? '';
-
-      for (var controller in _domainControllers) {
-        controller.dispose();
-      }
-      _domainControllers.clear();
-
-      if (platform.domains?.isEmpty ?? true) {
-        _domainControllers.add(TextEditingController());
-      } else {
-        for (var domain in platform.domains ?? []) {
-          _domainControllers.add(TextEditingController(text: domain));
-        }
-      }
     });
     _loadExistingDomains();
   }
