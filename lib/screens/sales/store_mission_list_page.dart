@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
-import '../../models/reward.dart';
-import '../../services/dio_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/store_mission_command_service.dart';
+import '../../services/store_mission_query_service.dart';
+import '../../models/store_mission/store_mission_response.dart';
+import '../../models/store_mission/store_mission_stats.dart';
+import '../../widgets/custom_date_range_picker.dart';
+import 'store_mission_detail_page.dart';
 
 class StoreMissionListPage extends StatefulWidget {
   const StoreMissionListPage({super.key});
@@ -14,317 +18,498 @@ class StoreMissionListPage extends StatefulWidget {
 }
 
 class _StoreMissionListPageState extends State<StoreMissionListPage> {
-  List<Reward> salesRewards = [];
-  final Set<String> selectedRewards = {};
-  bool selectAll = false;
-  final searchController = TextEditingController();
+  List<StoreMissionResponse> _missions = [];
+  StoreMissionStats? _stats;
+  final Set<int> _selectedMissionIds = {};
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedStatus = '전체';
+  String _selectedPlatform = '전체';
+  DateTimeRange? _selectedDateRange;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchSalesRewards();
+    _loadStoreMissions();
+    _searchController.addListener(_filterMissions);
   }
 
-  Future<void> _fetchSalesRewards() async {
-    try {
-      final authProvider = context.read<AuthProvider>();
-      final userId = authProvider.user?.userId;
-      if (userId != null) {
-        final dio = DioService.getInstance(context);
-        final response =
-            await dio.post('/reward/sales/list', data: {'userId': userId});
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
-        if (response.data['success'] && response.data['data'] != null) {
-          setState(() {
-            salesRewards = (response.data['data'] as List)
-                .map((item) => Reward.fromJson(item))
-                .toList();
-          });
-        }
+  Future<void> _loadStoreMissions() async {
+    setState(() => _isLoading = true);
+    try {
+      final userId = context.read<AuthProvider>().user?.userId;
+      if (userId != null) {
+        final missions = await StoreMissionQueryService.getStoreMissionsByRegistrant(
+          context,
+          userId,
+        );
+        final stats = await StoreMissionQueryService.getStoreMissionStats(context, userId);
+        setState(() {
+          _missions = missions;
+          _stats = stats;
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      debugPrint('Error fetching rewards: $e');
+      debugPrint('Error loading missions: $e');
+      setState(() => _isLoading = false);
     }
+  }
+
+  void _filterMissions() {
+    if (_missions.isEmpty) return;
+
+    setState(() {
+      final filteredMissions = _missions.where((mission) {
+        // 검색어 필터
+        if (_searchController.text.isNotEmpty) {
+          final searchTerm = _searchController.text.toLowerCase();
+          if (!mission.reward.rewardName.toLowerCase().contains(searchTerm) &&
+              !mission.store.storeName.toLowerCase().contains(searchTerm)) {
+            return false;
+          }
+        }
+
+        // 상태 필터
+        if (_selectedStatus != '전체') {
+          final status = _getStatusValue(_selectedStatus);
+          if (mission.status != status) {
+            return false;
+          }
+        }
+
+        // 플랫폼 필터
+        if (_selectedPlatform != '전체' &&
+            mission.platform.name != _selectedPlatform) {
+          return false;
+        }
+
+        // 날짜 범위 필터
+        if (_selectedDateRange != null) {
+          if (mission.startDate.isBefore(_selectedDateRange!.start) ||
+              mission.endDate.isAfter(_selectedDateRange!.end)) {
+            return false;
+          }
+        }
+
+        return true;
+      }).toList();
+
+      // 정렬
+      filteredMissions.sort((a, b) {
+        int comparison;
+        switch (_selectedStatus) {
+          case '등록일':
+            comparison = a.createdAt.compareTo(b.createdAt);
+            break;
+          case '시작일':
+            comparison = a.startDate.compareTo(b.startDate);
+            break;
+          case '종료일':
+            comparison = a.endDate.compareTo(b.endDate);
+            break;
+          case '리워드':
+            comparison = a.reward.rewardAmount.compareTo(b.reward.rewardAmount);
+            break;
+          default:
+            comparison = 0;
+        }
+        return comparison;
+      });
+    });
+  }
+
+  String _getStatusValue(String displayStatus) {
+    switch (displayStatus) {
+      case '진행중':
+        return 'ACTIVE';
+      case '완료':
+        return 'COMPLETED';
+      case '실패':
+        return 'FAILED';
+      default:
+        return displayStatus;
+    }
+  }
+
+  Future<void> _updateMissionStatus(BuildContext context, int missionId, String newStatus) async {
+    try {
+      await StoreMissionCommandService.updateMissionStatus(
+        context: context,
+        missionId: missionId,
+        newStatus: newStatus,
+      );
+      await _loadStoreMissions();
+    } catch (e) {
+      debugPrint('Error updating mission status: $e');
+    }
+  }
+
+  Future<void> _deleteSelectedMissions(BuildContext context) async {
+    try {
+      await StoreMissionCommandService.deleteStoreMissions(
+        context: context,
+        missionIds: _selectedMissionIds.toList(),
+      );
+      await _loadStoreMissions();
+    } catch (e) {
+      debugPrint('Error deleting selected missions: $e');
+    }
+  }
+
+  Widget _buildStatsCard() {
+    if (_stats == null) return const SizedBox.shrink();
+    
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem('전체 미션', _stats!.totalMissions.toString()),
+            _buildStatItem('진행중', _stats!.activeMissions.toString()),
+            _buildStatItem('완료', _stats!.completedMissions.toString()),
+            _buildStatItem('성공률', '${_stats!.successRate.toStringAsFixed(1)}%'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 4),
+        Text(value, style: Theme.of(context).textTheme.titleLarge),
+      ],
+    );
+  }
+
+  Widget _buildFilterSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                hintText: '미션명, 상품명 검색',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedStatus,
+                    items: ['전체', '진행중', '완료', '실패']
+                        .map((status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(status),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedStatus = value!);
+                      _filterMissions();
+                    },
+                    decoration: const InputDecoration(
+                      labelText: '상태',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedPlatform,
+                    items: ['전체', '쿠팡', '네이버']
+                        .map((platform) => DropdownMenuItem(
+                              value: platform,
+                              child: Text(platform),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedPlatform = value!);
+                      _filterMissions();
+                    },
+                    decoration: const InputDecoration(
+                      labelText: '플랫폼',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            CustomDateRangePicker(
+              dateRange: _selectedDateRange,
+              onDateRangeChanged: (range) {
+                setState(() => _selectedDateRange = range);
+                _filterMissions();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMissionTable() {
+    if (_missions.isEmpty) return const SizedBox.shrink();
+    
+    return Card(
+      child: DataTable2(
+        columns: const [
+          DataColumn2(label: Text('No.'), size: ColumnSize.S),
+          DataColumn2(label: Text('상태'), size: ColumnSize.S),
+          DataColumn2(label: Text('플랫폼'), size: ColumnSize.S),
+          DataColumn2(label: Text('미션명')),
+          DataColumn2(label: Text('상품명')),
+          DataColumn2(label: Text('리워드'), numeric: true, size: ColumnSize.S),
+          DataColumn2(label: Text('시작일'), size: ColumnSize.M),
+          DataColumn2(label: Text('종료일'), size: ColumnSize.M),
+          DataColumn2(label: Text('액션'), size: ColumnSize.M),
+        ],
+        rows: _missions.asMap().entries.map((entry) {
+          final index = entry.key;
+          final mission = entry.value;
+          return DataRow2(
+            selected: _selectedMissionIds.contains(mission.id),
+            onSelectChanged: (selected) {
+              setState(() {
+                if (selected!) {
+                  _selectedMissionIds.add(mission.id);
+                } else {
+                  _selectedMissionIds.remove(mission.id);
+                }
+              });
+            },
+            cells: [
+              DataCell(Text('${index + 1}')),
+              DataCell(_buildStatusChip(mission.status)),
+              DataCell(Text(mission.platform.name)),
+              DataCell(Text(mission.reward.rewardName)),
+              DataCell(Text(mission.store.productName)),
+              DataCell(Text('${NumberFormat('#,###').format(mission.reward.rewardAmount)}원')),
+              DataCell(Text(DateFormat('yy/MM/dd').format(mission.startDate))),
+              DataCell(Text(DateFormat('yy/MM/dd').format(mission.endDate))),
+              DataCell(Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.visibility),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => StoreMissionDetailPage(
+                            mission: mission,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      // TODO: 수정 구현
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('미션 삭제'),
+                          content: const Text('선택한 미션을 삭제하시겠습니까?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('취소'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('삭제'),
+                            ),
+                          ],
+                        ),
+                      );
+                      
+                      if (confirm == true) {
+                        await StoreMissionCommandService.deleteStoreMissions(
+                          context,
+                          [mission.id],
+                        );
+                        _loadStoreMissions();
+                      }
+                    },
+                  ),
+                ],
+              )),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String status) {
+    Color color;
+    String label;
+    
+    switch (status) {
+      case 'ACTIVE':
+        color = Colors.blue;
+        label = '진행중';
+        break;
+      case 'COMPLETED':
+        color = Colors.green;
+        label = '완료';
+        break;
+      case 'FAILED':
+        color = Colors.red;
+        label = '실패';
+        break;
+      default:
+        color = Colors.grey;
+        label = '알 수 없음';
+    }
+
+    return Chip(
+      label: Text(label),
+      backgroundColor: color.withOpacity(0.1),
+      labelStyle: TextStyle(color: color),
+    );
+  }
+
+  Widget _buildBottomActions() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('새 미션 등록'),
+              onPressed: () {
+                // TODO: 새 미션 등록 페이지로 이동
+              },
+            ),
+            if (_selectedMissionIds.isNotEmpty) ...[
+              ElevatedButton.icon(
+                icon: const Icon(Icons.delete),
+                label: Text('선택 미션 삭제 (${_selectedMissionIds.length})'),
+                onPressed: () async {
+                  await _deleteSelectedMissions(context);
+                },
+              ),
+              const SizedBox(width: 16),
+              PopupMenuButton<String>(
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.update),
+                  label: Text('상태 변경 (${_selectedMissionIds.length})'),
+                  onPressed: null,
+                ),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'ACTIVE',
+                    child: Text('진행중으로 변경'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'COMPLETED',
+                    child: Text('완료로 변경'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'FAILED',
+                    child: Text('실패로 변경'),
+                  ),
+                ],
+                onSelected: (status) async {
+                  for (final missionId in _selectedMissionIds) {
+                    await _updateMissionStatus(context, missionId, status);
+                  }
+                  setState(() => _selectedMissionIds.clear());
+                  _loadStoreMissions();
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () {
-            final currentLocale = Localizations.localeOf(context).languageCode;
-            context.go('/$currentLocale/home');
-          },
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          '리워드 관리',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 상단 정보 카드
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        title: const Text('스토어 미션 관리'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.blue.shade50,
-                                  child: const Icon(Icons.person, color: Colors.blue),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      context.read<AuthProvider>().user?.userName ?? "",
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      '관리자',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            _buildInfoItem(
-                              icon: Icons.inventory_2,
-                              label: '슬롯 전체 개수',
-                              value: '50',
-                            ),
-                            const SizedBox(height: 12),
-                            _buildInfoItem(
-                              icon: Icons.check_circle,
-                              label: '가용 개수',
-                              value: '5',
-                              valueColor: Colors.green,
-                            ),
-                          ],
+                      const Text(
+                        '정렬 기준',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.swap_horiz),
-                              label: const Text('사용자 변경'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                  horizontal: 24,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                final currentLocale = Localizations.localeOf(context).languageCode;
-                                context.go('/$currentLocale/sales/reward-write');
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('리워드 추가'),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                  horizontal: 24,
-                                ),
-                                backgroundColor: Colors.blue,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(height: 16),
+                      ...['등록일', '시작일', '종료일', '리워드'].map((field) {
+                        return ListTile(
+                          title: Text(field),
+                          onTap: () {
+                            setState(() => _selectedStatus = field);
+                            _filterMissions();
+                            Navigator.pop(context);
+                          },
+                        );
+                      }).toList(),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              
-              // 검색 및 필터 영역
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: '리워드 검색',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(color: Colors.blue),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('선택 삭제'),
-                    onPressed: selectedRewards.isEmpty ? null : () {},
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 24,
-                      ),
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              
-              // 데이터 테이블
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Container(
-                  height: 400,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: DataTable2(
-                      columnSpacing: 12,
-                      horizontalMargin: 12,
-                      minWidth: 600,
-                      smRatio: 0.75,
-                      lmRatio: 1.5,
-                      columns: const [
-                        DataColumn2(label: Text('선택'), size: ColumnSize.S),
-                        DataColumn2(label: Text('No'), size: ColumnSize.S),
-                        DataColumn2(label: Text('사용자ID')),
-                        DataColumn2(label: Text('리워드ID')),
-                        DataColumn2(label: Text('관리자')),
-                        DataColumn2(label: Text('생성여부')),
-                        DataColumn2(label: Text('상품URL')),
-                        DataColumn2(label: Text('키워드')),
-                      ],
-                      rows: salesRewards.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final reward = entry.value;
-                        return DataRow(
-                          cells: [
-                            DataCell(Checkbox(
-                              value: selectedRewards.contains(reward.rewardId),
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  if (value == true) {
-                                    selectedRewards.add(reward.rewardId);
-                                  } else {
-                                    selectedRewards.remove(reward.rewardId);
-                                  }
-                                });
-                              },
-                            )),
-                            DataCell(Text('${index + 1}')),
-                            DataCell(Text(reward.advertiserId)),
-                            DataCell(Text(reward.rewardId)),
-                            DataCell(Text(
-                                context.read<AuthProvider>().user?.userName ??
-                                    "")),
-                            DataCell(Text(reward.rewardStatus)),
-                            DataCell(Text(reward.productUrl)),
-                            DataCell(Text(reward.keyword)),
-                          ],
-                        );
-                      }).toList(),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade200),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              );
+            },
           ),
-        ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildInfoItem({
-    required IconData icon,
-    required String label,
-    required String value,
-    Color? valueColor,
-  }) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey.shade600),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? Colors.black87,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                _buildStatsCard(),
+                const SizedBox(height: 16),
+                _buildFilterSection(),
+                const SizedBox(height: 16),
+                _buildMissionTable(),
+                const SizedBox(height: 16),
+                _buildBottomActions(),
+              ],
+            ),
     );
   }
 }

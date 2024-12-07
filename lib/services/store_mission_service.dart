@@ -6,6 +6,7 @@ import '../models/store_mission/reward_info.dart';
 import '../models/store_mission/store_info.dart';
 import '../models/store_mission/registrant_info.dart';
 import '../models/store_mission/store_mission_response.dart';
+import '../models/store_mission/store_mission_stats.dart';
 
 class StoreMissionService {
   static Future<Map<String, dynamic>> createStoreMission({
@@ -85,42 +86,75 @@ class StoreMissionService {
   }
 
 
-  static Future<List<Map<String, dynamic>>> getStoreMissionsByTag(
-    BuildContext context,
-    String tag,
-  ) async {
+
+  static Future<List<StoreMissionResponse>> getStoreMissionsByRegistrant(BuildContext context, String registrantId) async {
     try {
       final dio = DioService.getInstance(context);
-      final response = await dio.get('/store-missions/tags/$tag');
-      if (response.statusCode == 200 && response.data['success']) {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+      final response = await dio.get('/store-missions/registrant/$registrantId');
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data['data'];
+        return data.map((json) => StoreMissionResponse.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load store missions');
       }
-      return [];
     } catch (e) {
-      debugPrint('Error getting store missions by tag: $e');
+      debugPrint('Error getting store missions: $e');
       rethrow;
     }
   }
 
-  static Future<List<String>> searchTags(
-      BuildContext context, String query) async {
+  static Future<StoreMissionStats> getStoreMissionStats(BuildContext context, String registrantId) async {
+    try {
+      final missions = await getStoreMissionsByRegistrant(context, registrantId);
+      
+      int total = missions.length;
+      int active = missions.where((m) => m.status == 'ACTIVE').length;
+      int completed = missions.where((m) => m.status == 'COMPLETED').length;
+      double successRate = total > 0 ? (completed / total) * 100 : 0;
+
+      return StoreMissionStats(
+        totalMissions: total,
+        activeMissions: active,
+        completedMissions: completed,
+        successRate: successRate,
+      );
+    } catch (e) {
+      debugPrint('Error getting store mission stats: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> updateStoreMissionStatus(
+    BuildContext context, 
+    String missionId, 
+    String newStatus
+  ) async {
     try {
       final dio = DioService.getInstance(context);
-      final response = await dio.get('/tags/search/private', queryParameters: {
-        'query': query,
-      });
-
-      if (response.statusCode == 200) {
-        if (response.data is Map) {
-          // ApiResponse로 감싸진 경우
-          final List<dynamic> tagsData = response.data['data'] ?? [];
-          return tagsData.map((tag) => tag.toString()).toList();
-        }
-      }
-      return [];
+      await dio.patch(
+        '/store-missions/$missionId/status',
+        data: {'status': newStatus},
+      );
     } catch (e) {
-      debugPrint('Error searching tags: $e');
-      return [];
+      debugPrint('Error updating store mission status: $e');
+      rethrow;
+    }
+  }
+
+  static Future<void> deleteStoreMissions(
+    BuildContext context,
+    List<String> missionIds,
+  ) async {
+    try {
+      final dio = DioService.getInstance(context);
+      await dio.delete(
+        '/store-missions',
+        data: {'missionIds': missionIds},
+      );
+    } catch (e) {
+      debugPrint('Error deleting store missions: $e');
+      rethrow;
     }
   }
 

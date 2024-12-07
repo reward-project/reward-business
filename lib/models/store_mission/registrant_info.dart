@@ -13,4 +13,11 @@ class RegistrantInfo {
       registrantName: json['registrantName'],
     );
   }
-} 
+
+  Map<String, dynamic> toJson() {
+    return {
+      'registrantId': registrantId,
+      'registrantName': registrantName,
+    };
+  }
+}

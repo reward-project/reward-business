@@ -62,7 +62,7 @@ class StoreMissionCommandService {
 
   static Future<void> updateMissionStatus({
     required BuildContext context,
-    required String missionId,
+    required int missionId,
     required String newStatus,
   }) async {
     try {
@@ -79,7 +79,7 @@ class StoreMissionCommandService {
 
   static Future<void> deleteStoreMissions({
     required BuildContext context,
-    required List<String> missionIds,
+    required List<int> missionIds,
   }) async {
     try {
       final dio = DioService.getInstance(context);

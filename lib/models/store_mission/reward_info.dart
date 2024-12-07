@@ -21,11 +21,23 @@ class RewardInfo {
     return RewardInfo(
       rewardId: json['rewardId'],
       rewardName: json['rewardName'],
-      rewardAmount: json['rewardAmount'],
+      rewardAmount: json['rewardAmount'].toDouble(),
       maxRewardsPerDay: json['maxRewardsPerDay'],
       startDate: DateTime.parse(json['startDate']),
       endDate: DateTime.parse(json['endDate']),
       status: json['status'],
     );
   }
-} 
+
+  Map<String, dynamic> toJson() {
+    return {
+      'rewardId': rewardId,
+      'rewardName': rewardName,
+      'rewardAmount': rewardAmount,
+      'maxRewardsPerDay': maxRewardsPerDay,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate.toIso8601String(),
+      'status': status,
+    };
+  }
+}

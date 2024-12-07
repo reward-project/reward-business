@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/store_mission_service.dart';
+import '../../services/store_mission_command_service.dart';
 import 'components/reward_form.dart';
 
 class RewardWritePage extends StatefulWidget {
@@ -34,7 +34,7 @@ class _RewardWritePageState extends State<RewardWritePage> {
         return;
       }
 
-      await StoreMissionService.createStoreMission(
+      await StoreMissionCommandService.createStoreMission(
         context: context,
         rewardName: data['rewardName'],
         platformId: data['platformId'],

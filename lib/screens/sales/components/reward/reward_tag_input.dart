@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../services/store_mission_service.dart';
+import '../../../../services/tag_query_service.dart';
 
 class RewardTagInput extends StatefulWidget {
   final List<String> tags;
@@ -28,7 +28,7 @@ class _RewardTagInputState extends State<RewardTagInput> {
 
     setState(() => _isLoading = true);
     try {
-      final tags = await StoreMissionService.searchTags(context, query);
+      final tags = await TagQueryService.searchTags(context, query);
       setState(() => _suggestedTags = tags);
     } catch (e) {
       debugPrint('Error searching tags: $e');

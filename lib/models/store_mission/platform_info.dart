@@ -25,4 +25,15 @@ class PlatformInfo {
       updatedAt: DateTime.parse(json['updatedAt']),
     );
   }
-} 
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'displayName': displayName,
+      'status': status,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+}

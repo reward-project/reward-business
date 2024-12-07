@@ -1,5 +1,6 @@
 class StoreInfo {
   final String storeName;
+  final String productName;
   final String productLink;
   final String keyword;
   final String productId;
@@ -8,6 +9,7 @@ class StoreInfo {
 
   StoreInfo({
     required this.storeName,
+    required this.productName,
     required this.productLink,
     required this.keyword,
     required this.productId,
@@ -18,6 +20,7 @@ class StoreInfo {
   factory StoreInfo.fromJson(Map<String, dynamic> json) {
     return StoreInfo(
       storeName: json['storeName'],
+      productName: json['productName'],
       productLink: json['productLink'],
       keyword: json['keyword'],
       productId: json['productId'],
@@ -25,4 +28,16 @@ class StoreInfo {
       storeStatus: json['storeStatus'],
     );
   }
-} 
+
+  Map<String, dynamic> toJson() {
+    return {
+      'storeName': storeName,
+      'productName': productName,
+      'productLink': productLink,
+      'keyword': keyword,
+      'productId': productId,
+      'optionId': optionId,
+      'storeStatus': storeStatus,
+    };
+  }
+}
