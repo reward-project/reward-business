@@ -34,7 +34,7 @@ class _SignInPageState extends State<SignInPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _dio = DioService.getInstance(context);
+    _dio = DioService.instance;
   }
 
   Widget _buildSideMenu() {

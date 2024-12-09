@@ -226,7 +226,7 @@ class _RewardFormState extends State<RewardForm> {
                 ),
               ),
               Text(
-                '• 리워드 단가에 수수료가 포함�� 금액입니다.',
+                '• 리워드 단가에 수수료가 포함 금액입니다.',
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.5,
@@ -248,13 +248,10 @@ class _RewardFormState extends State<RewardForm> {
   void _handleSubmit() {
     if (widget.formKey.currentState!.validate()) {
       if (_startDate == null || _endDate == null || _selectedPlatform == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('모든 필수 항목을 입력해주세요.')),
-        );
         return;
       }
 
-      final data = {
+      widget.onSubmit({
         'rewardName': _rewardNameController.text,
         'platformId': _selectedPlatform,
         'storeName': _storeNameController.text,
@@ -262,14 +259,13 @@ class _RewardFormState extends State<RewardForm> {
         'keyword': _keywordController.text,
         'productId': _productIdController.text,
         'optionId': _optionIdController.text,
-        'rewardAmount': double.parse(_rewardAmountController.text.replaceAll(',', '')),
-        'maxRewardsPerDay': int.parse(_maxRewardsPerDayController.text),
         'startDate': _startDate,
         'endDate': _endDate,
+        'rewardAmount': double.parse(_rewardAmountController.text.replaceAll(',', '')),
+        'totalBudget': _totalMaxAmount,
+        'maxRewardsPerDay': int.parse(_maxRewardsPerDayController.text),
         'tags': _tags,
-      };
-
-      widget.onSubmit(data);
+      });
     }
   }
 

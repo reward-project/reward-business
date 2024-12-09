@@ -67,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _dio = DioService.getInstance(context);
+    _dio = DioService.instance;
   }
 
   Future<void> _handleLogin() async {

@@ -11,6 +11,7 @@ import 'router/app_router.dart';
 import 'providers/locale_provider.dart';
 import 'config/app_config.dart';
 import 'providers/auth_provider.dart';
+import 'services/dio_service.dart';
 
 // 웹 전용 import를 조건부로 처리
 
@@ -27,22 +28,27 @@ void main() async {
     print('========================\n');
   }
 
-  final authProvider = AuthProvider();
-  await authProvider.initializeAuth(); // 앱 시작 시 인증 상태 초기화
+  final navigatorKey = GlobalKey<NavigatorState>();
+  final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => authProvider),
+      providers: [  
+        ChangeNotifierProvider(
+          create: (context) => AuthProvider(context)..initializeAuth(),
+        ),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+      ),
     ),
   );
 
   // 로컬 서버 시작
   if (!kIsWeb) {
-    startLocalServer(authProvider);
+    startLocalServer(navigatorKey);
   }
 }
 Future<void> precacheFonts() async {
@@ -52,7 +58,7 @@ Future<void> precacheFonts() async {
   fontLoader.addFont(rootBundle.load('assets/fonts/NotoSansKR-Bold.ttf'));
   await fontLoader.load();
 }
-void startLocalServer(AuthProvider authProvider) async {
+void startLocalServer(GlobalKey<NavigatorState> navigatorKey) async {
   final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 8765);
   print('Listening on localhost:${server.port}');
 
@@ -63,6 +69,8 @@ void startLocalServer(AuthProvider authProvider) async {
       final refreshToken = uri.queryParameters['refreshToken'];
       final locale = uri.queryParameters['locale'];
       if (accessToken != null && refreshToken != null) {
+        final context = navigatorKey.currentContext!;
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
         authProvider.setTokens(
           accessToken: accessToken,
           refreshToken: refreshToken,
@@ -105,13 +113,21 @@ void startLocalServer(AuthProvider authProvider) async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final GlobalKey<NavigatorState> navigatorKey;
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
+
+  const MyApp({
+    super.key,
+    required this.navigatorKey,
+    required this.scaffoldMessengerKey,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<LocaleProvider>(
       builder: (context, localeProvider, _) {
         return MaterialApp.router(
+          scaffoldMessengerKey: scaffoldMessengerKey,
           routerConfig: router,
           locale: localeProvider.locale,
           supportedLocales: const [
@@ -124,8 +140,12 @@ class MyApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
+          builder: (context, child) {
+            DioService.init(context);
+            return child ?? const SizedBox.shrink();
+          },
           theme: ThemeData(
-             pageTransitionsTheme: const PageTransitionsTheme(
+            pageTransitionsTheme: const PageTransitionsTheme(
               builders: {
                 // 모든 플랫폼에 대해 애니메이션 제거
                 TargetPlatform.android: NoTransitionsBuilder(),
@@ -137,7 +157,7 @@ class MyApp extends StatelessWidget {
             ),
             useMaterial3: true,
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-            fontFamily: 'NotoSansKR',  // 기본 폰트 설정
+            fontFamily: 'NotoSansKR',  // 본 폰트 설정
             textTheme: const TextTheme(
               bodyLarge: TextStyle(
                 fontFamily: 'NotoSansKR',

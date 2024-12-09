@@ -300,14 +300,14 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  context.read<AuthProvider>().user?.userName ?? "사용자",
+                  context.read<AuthProvider>().currentUser?.userName ?? "사용자",
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                   ),
                 ),
                 Text(
-                  context.read<AuthProvider>().user?.email ?? "",
+                  context.read<AuthProvider>().currentUser?.email ?? "",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -354,13 +354,13 @@ class HomePage extends StatelessWidget {
     try {
       if (kDebugMode) print('Attempting logout');
       
-      final dio = DioService.getInstance(context);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final dio = DioService.instance;
       await dio.post('/members/logout');
       
       if (kDebugMode) print('Server logout successful');
 
       if (context.mounted) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
         await authProvider.logout();
 
         if (kDebugMode) {

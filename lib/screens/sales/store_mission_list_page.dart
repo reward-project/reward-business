@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -26,12 +27,32 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
   String _selectedPlatform = '전체';
   DateTimeRange? _selectedDateRange;
   bool _isLoading = false;
+  List<StoreMissionResponse> _filteredMissions = [];
 
   @override
   void initState() {
     super.initState();
-    _loadStoreMissions();
+    debugPrint('initState called');
     _searchController.addListener(_filterMissions);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      debugPrint('Current auth state - isAuthenticated: ${authProvider.isAuthenticated}');
+      if (authProvider.user == null) {
+        debugPrint('Initializing user info...');
+        authProvider.initializeUserInfo().then((_) {
+          debugPrint('User info initialized, loading missions...');
+          _loadStoreMissions();
+        });
+      } else {
+        debugPrint('User info already exists, loading missions...');
+        _loadStoreMissions();
+      }
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   @override
@@ -41,24 +62,51 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
   }
 
   Future<void> _loadStoreMissions() async {
+    debugPrint('_loadStoreMissions started');
+    if (!mounted) return;
+    
     setState(() => _isLoading = true);
+    
     try {
-      final userId = context.read<AuthProvider>().user?.userId;
-      if (userId != null) {
-        final missions = await StoreMissionQueryService.getStoreMissionsByRegistrant(
-          context,
-          userId,
+      final authProvider = context.read<AuthProvider>();
+      debugPrint('Auth state - isAuthenticated: ${authProvider.isAuthenticated}');
+      final userInfo = await authProvider.user;
+      debugPrint('User info: ${userInfo?.toString()}');
+
+      if (!authProvider.isAuthenticated || userInfo?.userId == null) {
+        debugPrint('No valid user found - showing error');
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사용자 정보를 찾을 수 없습니다. 다시 로그인해주세요.')),
         );
-        final stats = await StoreMissionQueryService.getStoreMissionStats(context, userId);
-        setState(() {
-          _missions = missions;
-          _stats = stats;
-          _isLoading = false;
-        });
+        return;
       }
+
+      final userId = userInfo!.userId;
+      debugPrint('Fetching missions for user: $userId');
+      final missions = await StoreMissionQueryService.getStoreMissionsByRegistrant(context, userId);
+      debugPrint('Missions fetched: ${missions.length}');
+      
+      final stats = await StoreMissionQueryService.getStoreMissionStats(context, userId);
+      debugPrint('Stats fetched');
+
+      if (!mounted) return;
+
+      setState(() {
+        _missions = missions;
+        _filteredMissions = missions;
+        _stats = stats;
+        _isLoading = false;
+      });
+      debugPrint('State updated with missions');
     } catch (e) {
-      debugPrint('Error loading missions: $e');
+      debugPrint('Error in _loadStoreMissions: $e');
+      if (!mounted) return;
       setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('미션 목록을 불러오는데 실패했습니다: $e')),
+      );
     }
   }
 
@@ -66,7 +114,7 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
     if (_missions.isEmpty) return;
 
     setState(() {
-      final filteredMissions = _missions.where((mission) {
+      _filteredMissions = _missions.where((mission) {
         // 검색어 필터
         if (_searchController.text.isNotEmpty) {
           final searchTerm = _searchController.text.toLowerCase();
@@ -77,51 +125,29 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
         }
 
         // 상태 필터
-        if (_selectedStatus != '전체') {
-          final status = _getStatusValue(_selectedStatus);
-          if (mission.status != status) {
+        if (_selectedStatus != '전체' && _selectedStatus != '') {
+          if (mission.status != _getStatusValue(_selectedStatus)) {
             return false;
           }
         }
 
         // 플랫폼 필터
-        if (_selectedPlatform != '전체' &&
-            mission.platform.name != _selectedPlatform) {
-          return false;
+        if (_selectedPlatform != '전체' && _selectedPlatform != '') {
+          if (mission.platform.name != _selectedPlatform) {
+            return false;
+          }
         }
 
         // 날짜 범위 필터
         if (_selectedDateRange != null) {
-          if (mission.startDate.isBefore(_selectedDateRange!.start) ||
-              mission.endDate.isAfter(_selectedDateRange!.end)) {
+          if (mission.reward.startDate.isBefore(_selectedDateRange!.start) ||
+              mission.reward.endDate.isAfter(_selectedDateRange!.end)) {
             return false;
           }
         }
 
         return true;
       }).toList();
-
-      // 정렬
-      filteredMissions.sort((a, b) {
-        int comparison;
-        switch (_selectedStatus) {
-          case '등록일':
-            comparison = a.createdAt.compareTo(b.createdAt);
-            break;
-          case '시작일':
-            comparison = a.startDate.compareTo(b.startDate);
-            break;
-          case '종료일':
-            comparison = a.endDate.compareTo(b.endDate);
-            break;
-          case '리워드':
-            comparison = a.reward.rewardAmount.compareTo(b.reward.rewardAmount);
-            break;
-          default:
-            comparison = 0;
-        }
-        return comparison;
-      });
     });
   }
 
@@ -268,97 +294,104 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
     if (_missions.isEmpty) return const SizedBox.shrink();
     
     return Card(
-      child: DataTable2(
-        columns: const [
-          DataColumn2(label: Text('No.'), size: ColumnSize.S),
-          DataColumn2(label: Text('상태'), size: ColumnSize.S),
-          DataColumn2(label: Text('플랫폼'), size: ColumnSize.S),
-          DataColumn2(label: Text('미션명')),
-          DataColumn2(label: Text('상품명')),
-          DataColumn2(label: Text('리워드'), numeric: true, size: ColumnSize.S),
-          DataColumn2(label: Text('시작일'), size: ColumnSize.M),
-          DataColumn2(label: Text('종료일'), size: ColumnSize.M),
-          DataColumn2(label: Text('액션'), size: ColumnSize.M),
-        ],
-        rows: _missions.asMap().entries.map((entry) {
-          final index = entry.key;
-          final mission = entry.value;
-          return DataRow2(
-            selected: _selectedMissionIds.contains(mission.id),
-            onSelectChanged: (selected) {
-              setState(() {
-                if (selected!) {
-                  _selectedMissionIds.add(mission.id);
-                } else {
-                  _selectedMissionIds.remove(mission.id);
-                }
-              });
-            },
-            cells: [
-              DataCell(Text('${index + 1}')),
-              DataCell(_buildStatusChip(mission.status)),
-              DataCell(Text(mission.platform.name)),
-              DataCell(Text(mission.reward.rewardName)),
-              DataCell(Text(mission.store.productName)),
-              DataCell(Text('${NumberFormat('#,###').format(mission.reward.rewardAmount)}원')),
-              DataCell(Text(DateFormat('yy/MM/dd').format(mission.startDate))),
-              DataCell(Text(DateFormat('yy/MM/dd').format(mission.endDate))),
-              DataCell(Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.visibility),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => StoreMissionDetailPage(
-                            mission: mission,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () {
-                      // TODO: 수정 구현
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('미션 삭제'),
-                          content: const Text('선택한 미션을 삭제하시겠습니까?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('취소'),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('삭제'),
-                            ),
-                          ],
-                        ),
-                      );
-                      
-                      if (confirm == true) {
-                        await StoreMissionCommandService.deleteStoreMissions(
+      child: SizedBox(
+        height: 500,
+        child: DataTable2(
+          columns: const [
+            DataColumn2(label: Text('No.'), size: ColumnSize.S),
+            DataColumn2(label: Text('상태'), size: ColumnSize.S),
+            DataColumn2(label: Text('플랫폼'), size: ColumnSize.S),
+            DataColumn2(label: Text('미션명')),
+            DataColumn2(label: Text('상품명')),
+            DataColumn2(label: Text('리워드'), numeric: true, size: ColumnSize.S),
+            DataColumn2(label: Text('사용량'), numeric: true, size: ColumnSize.S),
+            DataColumn2(label: Text('잔액'), numeric: true, size: ColumnSize.S),
+            DataColumn2(label: Text('시작일'), size: ColumnSize.M),
+            DataColumn2(label: Text('종료일'), size: ColumnSize.M),
+            DataColumn2(label: Text('액션'), size: ColumnSize.M),
+          ],
+          rows: _missions.asMap().entries.map((entry) {
+            final index = entry.key;
+            final mission = entry.value;
+            return DataRow2(
+              selected: _selectedMissionIds.contains(mission.id),
+              onSelectChanged: (selected) {
+                setState(() {
+                  if (selected!) {
+                    _selectedMissionIds.add(mission.id);
+                  } else {
+                    _selectedMissionIds.remove(mission.id);
+                  }
+                });
+              },
+              cells: [
+                DataCell(Text('${index + 1}')),
+                DataCell(_buildStatusChip(mission.status)),
+                DataCell(Text(mission.platform.name)),
+                DataCell(Text(mission.reward.rewardName)),
+                DataCell(Text(mission.store.storeName)),
+                DataCell(Text('${NumberFormat('#,###').format(mission.reward.rewardAmount)}원')),
+                DataCell(Text('${NumberFormat('#,###').format(mission.totalRewardUsage)}원')),
+                DataCell(Text('${NumberFormat('#,###').format(mission.remainingRewardBudget)}원')),
+                DataCell(Text(DateFormat('yy/MM/dd').format(mission.reward.startDate))),
+                DataCell(Text(DateFormat('yy/MM/dd').format(mission.reward.endDate))),
+                DataCell(Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.visibility),
+                      onPressed: () {
+                        Navigator.push(
                           context,
-                          [mission.id],
+                          MaterialPageRoute(
+                            builder: (context) => StoreMissionDetailPage(
+                              mission: mission,
+                            ),
+                          ),
                         );
-                        _loadStoreMissions();
-                      }
-                    },
-                  ),
-                ],
-              )),
-            ],
-          );
-        }).toList(),
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        // TODO: 수정 구현
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('미션 삭제'),
+                            content: const Text('선택한 미션을 삭제하겠습니까?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('취소'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text('삭제'),
+                              ),
+                            ],
+                          ),
+                        );
+                        
+                        if (confirm == true) {
+                          await StoreMissionCommandService.deleteStoreMissions(
+                            context: context,
+                            missionIds: [mission.id],
+                          );
+                          _loadStoreMissions();
+                        }
+                      },
+                    ),
+                  ],
+                )),
+              ],
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -374,7 +407,7 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
         break;
       case 'COMPLETED':
         color = Colors.green;
-        label = '완료';
+        label = '완���';
         break;
       case 'FAILED':
         color = Colors.red;
@@ -403,7 +436,8 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
               icon: const Icon(Icons.add),
               label: const Text('새 미션 등록'),
               onPressed: () {
-                // TODO: 새 미션 등록 페이지로 이동
+                final locale = Localizations.localeOf(context).languageCode;
+                context.go('/$locale/sales/reward-write');
               },
             ),
             if (_selectedMissionIds.isNotEmpty) ...[
@@ -505,7 +539,9 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
                 const SizedBox(height: 16),
                 _buildFilterSection(),
                 const SizedBox(height: 16),
-                _buildMissionTable(),
+                Expanded(
+                  child: _buildMissionTable(),
+                ),
                 const SizedBox(height: 16),
                 _buildBottomActions(),
               ],

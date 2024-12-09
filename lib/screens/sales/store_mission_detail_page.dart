@@ -89,29 +89,28 @@ class StoreMissionDetailPage extends StatelessWidget {
             _buildInfoSection(
               '기본 정보',
               [
-                _buildInfoRow('미션 ID', mission.id),
+                _buildInfoRow('미션 ID', mission.id.toString()),
                 _buildInfoRow('상태', mission.status),
-                _buildInfoRow('등록자', mission.registrantInfo.name),
-                _buildInfoRow('등록일', DateFormat('yyyy-MM-dd').format(mission.createdAt)),
+                _buildInfoRow('등록자', mission.registrant.registrantName ?? 'Unknown'),
+                _buildInfoRow('등록일', DateFormat('yyyy-MM-dd').format(mission.createdAt ?? DateTime.now())),
               ],
             ),
             _buildInfoSection(
               '리워드 정보',
               [
-                _buildInfoRow('리워드명', mission.rewardInfo.name),
-                _buildInfoRow('금액', '${NumberFormat('#,###').format(mission.rewardInfo.amount)}원'),
-                _buildInfoRow('시작일', DateFormat('yyyy-MM-dd').format(mission.startDate)),
-                _buildInfoRow('종료일', DateFormat('yyyy-MM-dd').format(mission.endDate)),
+                _buildInfoRow('리워드명', mission.reward.rewardName),
+                _buildInfoRow('금액', '${NumberFormat('#,###').format(mission.reward.rewardAmount)}원'),
+                _buildInfoRow('시작일', DateFormat('yyyy-MM-dd').format(mission.reward.startDate)),
+                _buildInfoRow('종료일', DateFormat('yyyy-MM-dd').format(mission.reward.endDate)),
               ],
             ),
             _buildInfoSection(
               '플랫폼 정보',
               [
-                _buildInfoRow('플랫폼', mission.platformInfo.name),
-                _buildInfoRow('스토어명', mission.storeInfo.name),
-                _buildInfoRow('상품명', mission.storeInfo.productName),
-                _buildInfoRow('상품 URL', mission.storeInfo.productUrl),
-                _buildInfoRow('검색어', mission.storeInfo.keyword),
+                _buildInfoRow('플랫폼', mission.platform.name),
+                _buildInfoRow('스토어명', mission.store.storeName),
+                _buildInfoRow('상품 URL', mission.store.productLink),
+                _buildInfoRow('검색어', mission.store.keyword),
               ],
             ),
             if (mission.tags.isNotEmpty)

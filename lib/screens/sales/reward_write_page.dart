@@ -22,7 +22,7 @@ class _RewardWritePageState extends State<RewardWritePage> {
       debugPrint('Submitting form with data: $data');
       
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final user = authProvider.user;
+      final user = await authProvider.user;
 
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -47,6 +47,7 @@ class _RewardWritePageState extends State<RewardWritePage> {
         endDate: data['endDate'],
         registrantId: user.userId,
         rewardAmount: data['rewardAmount'],
+        totalBudget: data['totalBudget'],
         maxRewardsPerDay: data['maxRewardsPerDay'],
         tags: List<String>.from(data['tags'] ?? []),
       );

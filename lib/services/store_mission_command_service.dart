@@ -16,11 +16,12 @@ class StoreMissionCommandService {
     required DateTime endDate,
     required String registrantId,
     required double rewardAmount,
+    required double totalBudget,
     required int maxRewardsPerDay,
     required List<String> tags,
   }) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
 
       if (!Uri.parse(productLink).hasScheme) {
         throw Exception('올바른 URL 형식이 아닙니다. 전체 URL을 입력해주세요.');
@@ -32,15 +33,15 @@ class StoreMissionCommandService {
           'rewardName': rewardName,
           'platformId': platformId,
           'storeName': storeName,
-          'registrantName': registrantId,
           'productLink': productLink,
           'keyword': keyword,
           'productId': productId,
           'optionId': optionId,
           'startDate': startDate.toIso8601String().split('T')[0],
           'endDate': endDate.toIso8601String().split('T')[0],
-          'registrantId': registrantId,
+          'registrantId': int.parse(registrantId),
           'rewardAmount': rewardAmount,
+          'totalBudget': totalBudget,
           'maxRewardsPerDay': maxRewardsPerDay,
           'tags': tags,
         },
@@ -66,7 +67,7 @@ class StoreMissionCommandService {
     required String newStatus,
   }) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       await dio.patch(
         '/store-missions/$missionId/status',
         data: {'status': newStatus},
@@ -82,7 +83,7 @@ class StoreMissionCommandService {
     required List<int> missionIds,
   }) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       await dio.delete(
         '/store-missions',
         data: {'missionIds': missionIds},

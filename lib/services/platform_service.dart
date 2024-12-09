@@ -15,7 +15,7 @@ class PlatformService {
         }
       }
 
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       final response = await dio.post(
         '/platforms',
         data: {
@@ -33,7 +33,7 @@ class PlatformService {
 
   Future<bool> isDomainAvailable(BuildContext context, String domain) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       final response =
           await dio.get('/platforms/domains/check', queryParameters: {
         'domain': domain,
@@ -47,7 +47,7 @@ class PlatformService {
 
   Future<List<Platform>> getPlatforms(BuildContext context) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       print('Sending request to /api/v1/platforms/active');
 
       final response = await dio.get(
@@ -95,7 +95,7 @@ class PlatformService {
   Future<List<Platform>> searchPlatforms(
       BuildContext context, String searchTerm) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       final response = await dio.get(
         '/platforms/search',
         queryParameters: {
@@ -114,7 +114,7 @@ class PlatformService {
   Future<List<Map<String, dynamic>>> getPlatformDomains(
       BuildContext context, String platformId) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       final response = await dio.get('/platforms/$platformId/domains');
 
       return List<Map<String, dynamic>>.from(response.data);
@@ -125,7 +125,7 @@ class PlatformService {
 
   Future<Platform?> updatePlatform(BuildContext context, String id, String name,
       String displayName, List<String> newDomains) async {
-    final dio = DioService.getInstance(context);
+    final dio = DioService.instance;
 
     // ID가 유효한 숫자인지 확인
     final platformId = int.tryParse(id);

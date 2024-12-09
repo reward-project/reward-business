@@ -10,8 +10,8 @@ class RewardService {
     // Add other reward-related fields here
   }) async {
     try {
-      final dio = DioService.getInstance(context);
-      
+      final dio = DioService.instance;
+
       final response = await dio.post(
         '/api/rewards',
         data: {

@@ -26,7 +26,7 @@ class StoreMissionService {
     required List<String> tags,
   }) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
 
       // 요청 데이터 로깅
       debugPrint('Creating store mission with data:');
@@ -85,13 +85,13 @@ class StoreMissionService {
     }
   }
 
-
-
-  static Future<List<StoreMissionResponse>> getStoreMissionsByRegistrant(BuildContext context, String registrantId) async {
+  static Future<List<StoreMissionResponse>> getStoreMissionsByRegistrant(
+      BuildContext context, String registrantId) async {
     try {
-      final dio = DioService.getInstance(context);
-      final response = await dio.get('/store-missions/registrant/$registrantId');
-      
+      final dio = DioService.instance;
+      final response =
+          await dio.get('/store-missions/registrant/$registrantId');
+
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data['data'];
         return data.map((json) => StoreMissionResponse.fromJson(json)).toList();
@@ -104,10 +104,12 @@ class StoreMissionService {
     }
   }
 
-  static Future<StoreMissionStats> getStoreMissionStats(BuildContext context, String registrantId) async {
+  static Future<StoreMissionStats> getStoreMissionStats(
+      BuildContext context, String registrantId) async {
     try {
-      final missions = await getStoreMissionsByRegistrant(context, registrantId);
-      
+      final missions =
+          await getStoreMissionsByRegistrant(context, registrantId);
+
       int total = missions.length;
       int active = missions.where((m) => m.status == 'ACTIVE').length;
       int completed = missions.where((m) => m.status == 'COMPLETED').length;
@@ -126,12 +128,9 @@ class StoreMissionService {
   }
 
   static Future<void> updateStoreMissionStatus(
-    BuildContext context, 
-    String missionId, 
-    String newStatus
-  ) async {
+      BuildContext context, String missionId, String newStatus) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       await dio.patch(
         '/store-missions/$missionId/status',
         data: {'status': newStatus},
@@ -147,7 +146,7 @@ class StoreMissionService {
     List<String> missionIds,
   ) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       await dio.delete(
         '/store-missions',
         data: {'missionIds': missionIds},

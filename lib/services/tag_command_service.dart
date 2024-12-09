@@ -9,7 +9,7 @@ class TagCommandService {
     required bool isPublic,
   }) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       await dio.post(
         '/tags',
         data: {
@@ -30,7 +30,7 @@ class TagCommandService {
     required String permission,
   }) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       await dio.post(
         '/tags/$tagId/share',
         data: {
@@ -43,4 +43,4 @@ class TagCommandService {
       rethrow;
     }
   }
-} 
+}

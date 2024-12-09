@@ -12,7 +12,7 @@ class TagService {
     required TagShareRequest request,
   }) async {
     try {
-      final dio = DioService.getInstance(context);
+      final dio = DioService.instance;
       await dio.post('/tags/$tagId/share', data: request.toJson());
     } catch (e) {
       debugPrint('Error sharing tag: $e');
