@@ -5,9 +5,9 @@ class DomainStatusList extends StatelessWidget {
   final List<Map<String, dynamic>>? domains;
 
   const DomainStatusList({
-    Key? key,
+    super.key,
     required this.domains,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class DomainStatusList extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        ...domains!.map((domain) => DomainStatusTile(domain: domain)).toList(),
+        ...domains!.map((domain) => DomainStatusTile(domain: domain)),
       ],
     );
   }

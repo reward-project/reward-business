@@ -11,7 +11,7 @@ class PlatformSearchSection extends StatelessWidget {
   final VoidCallback onClear;
 
   const PlatformSearchSection({
-    Key? key,
+    super.key,
     required this.searchController,
     required this.isSearching,
     required this.searchResults,
@@ -19,7 +19,7 @@ class PlatformSearchSection extends StatelessWidget {
     required this.onSearch,
     required this.onSelect,
     required this.onClear,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

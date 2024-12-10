@@ -8,13 +8,13 @@ class DomainField extends StatelessWidget {
   final VoidCallback onRemove;
 
   const DomainField({
-    Key? key,
+    super.key,
     required this.controller,
     required this.index,
     required this.isLastField,
     required this.onAdd,
     required this.onRemove,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

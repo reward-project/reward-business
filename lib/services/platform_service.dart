@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/platform/platform.dart';
 import 'dio_service.dart';
 import 'package:dio/dio.dart';
-import '../config/app_config.dart';
-import 'dart:convert';
 
 class PlatformService {
   Future<Platform> registerPlatform(BuildContext context, String name,

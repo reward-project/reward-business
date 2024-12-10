@@ -13,7 +13,6 @@ import '../../providers/auth_provider.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/token_dto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uni_links/uni_links.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_config.dart';

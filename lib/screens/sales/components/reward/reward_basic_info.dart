@@ -6,10 +6,10 @@ class RewardBasicInfo extends StatelessWidget {
   final TextEditingController storeNameController;
 
   const RewardBasicInfo({
-    Key? key,
+    super.key,
     required this.rewardNameController,
     required this.storeNameController,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

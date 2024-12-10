@@ -20,7 +20,7 @@ class RewardPlatformInfo extends StatelessWidget {
   final TextEditingController optionIdController;
 
   const RewardPlatformInfo({
-    Key? key,
+    super.key,
     required this.platforms,
     required this.selectedPlatform,
     required this.isLoadingPlatforms,
@@ -33,7 +33,7 @@ class RewardPlatformInfo extends StatelessWidget {
     required this.keywordController,
     required this.productIdController,
     required this.optionIdController,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

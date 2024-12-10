@@ -6,10 +6,10 @@ class CustomDateRangePicker extends StatelessWidget {
   final Function(DateTimeRange?) onDateRangeChanged;
 
   const CustomDateRangePicker({
-    Key? key,
+    super.key,
     required this.dateRange,
     required this.onDateRangeChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

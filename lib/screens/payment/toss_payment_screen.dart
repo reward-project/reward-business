@@ -7,10 +7,10 @@ class TossPaymentScreen extends StatefulWidget {
   final String itemName;
 
   const TossPaymentScreen({
-    Key? key, 
+    super.key, 
     required this.amount,
     required this.itemName,
-  }) : super(key: key);
+  });
 
   @override
   State<TossPaymentScreen> createState() => _TossPaymentScreenState();

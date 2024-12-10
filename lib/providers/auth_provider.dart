@@ -3,10 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'package:dio/dio.dart';
 import '../models/api_response.dart';
 import '../models/token_dto.dart';
-import '../config/app_config.dart';
 import '../services/dio_service.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -17,6 +15,7 @@ class AuthProvider extends ChangeNotifier {
   Timer? _refreshTimer;
   Map<String, dynamic>? _userInfo;
   bool _isInitialized = false;
+  UserInfo? _user;
 
   AuthProvider(this.context);
 
@@ -27,6 +26,8 @@ class AuthProvider extends ChangeNotifier {
 
   UserInfo? get currentUser =>
       _userInfo != null ? UserInfo.fromJson(_userInfo!) : null;
+
+  double? get rewardBudget => currentUser?.rewardBudget;
 
   Future<UserInfo?> get user async {
     if (!_isAuthenticated) return null;
@@ -212,6 +213,7 @@ class UserInfo {
   final String? nickname;
   final String? profileImage;
   final DateTime? createdAt;
+  final double rewardBudget;
 
   UserInfo({
     required this.userId,
@@ -221,6 +223,7 @@ class UserInfo {
     this.nickname,
     this.profileImage,
     this.createdAt,
+    this.rewardBudget = 0.0,
   });
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
@@ -236,6 +239,7 @@ class UserInfo {
       profileImage: json['profileImage'],
       createdAt:
           json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      rewardBudget: (json['rewardBudget'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -248,6 +252,7 @@ class UserInfo {
       'nickname': nickname,
       'profileImage': profileImage,
       'createdAt': createdAt?.toIso8601String(),
+      'rewardBudget': rewardBudget,
     };
   }
 }

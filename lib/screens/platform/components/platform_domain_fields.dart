@@ -11,14 +11,14 @@ class PlatformDomainFields extends StatelessWidget {
   final Function onAddDomain;
   final Function(int) onRemoveDomain;
 
-  PlatformDomainFields({
-    Key? key,
+  const PlatformDomainFields({
+    super.key,
     required this.onAddDomain,
     required this.domainControllers,
     required this.selectedPlatform,
     required this.existingDomains,
     required this.onRemoveDomain,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class PlatformDomainFields extends StatelessWidget {
                 onAddDomain();
               },
             );
-          }).toList(),
+          }),
         ] else if (selectedPlatform != null && existingDomains != null) ...[
           DomainStatusList(domains: existingDomains!),
           const SizedBox(height: 16),
@@ -59,7 +59,7 @@ class PlatformDomainFields extends StatelessWidget {
                 onAddDomain();
               },
             );
-          }).toList(),
+          }),
         ],
       ],
     );

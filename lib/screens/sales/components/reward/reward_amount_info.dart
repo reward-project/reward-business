@@ -12,13 +12,13 @@ class RewardAmountInfo extends StatelessWidget {
   final VoidCallback onCpcInfoPressed;
 
   const RewardAmountInfo({
-    Key? key,
+    super.key,
     required this.rewardAmountController,
     required this.maxRewardsPerDayController,
     required this.cpcAmount,
     required this.totalMaxAmount,
     required this.onCpcInfoPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

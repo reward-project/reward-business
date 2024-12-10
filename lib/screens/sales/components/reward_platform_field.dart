@@ -8,12 +8,12 @@ class RewardPlatformField extends StatelessWidget {
   final Function(int?) onChanged;
 
   const RewardPlatformField({
-    Key? key,
+    super.key,
     required this.platforms,
     required this.selectedPlatform,
     required this.isLoading,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

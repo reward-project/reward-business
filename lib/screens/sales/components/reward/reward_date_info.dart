@@ -12,14 +12,14 @@ class RewardDateInfo extends StatelessWidget {
   final VoidCallback onCalendarPressed;
 
   const RewardDateInfo({
-    Key? key,
+    super.key,
     required this.startDateController,
     required this.endDateController,
     required this.startDate,
     required this.endDate,
     required this.onDateInput,
     required this.onCalendarPressed,
-  }) : super(key: key);
+  });
 
   String _formatDate(String value) {
     value = value.replaceAll(RegExp(r'[^0-9]'), '');
@@ -119,7 +119,7 @@ class RewardDateInfo extends StatelessWidget {
         if (totalDays > 0) ...[
           const SizedBox(height: 8),
           Text(
-            '총 작업 기간: ${totalDays}일',
+            '총 작업 기간: $totalDays일',
             style: const TextStyle(
               fontSize: 13,
               color: Color(0xFF374151),

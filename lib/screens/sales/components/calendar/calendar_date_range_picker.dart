@@ -10,13 +10,13 @@ class CalendarDateRangePicker extends StatefulWidget {
   final Function(DateTime?, DateTime?) onDateRangeSelected;
 
   const CalendarDateRangePicker({
-    Key? key,
+    super.key,
     this.initialStartDate,
     this.initialEndDate,
     required this.firstDate,
     required this.lastDate,
     required this.onDateRangeSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<CalendarDateRangePicker> createState() => _CalendarDateRangePickerState();

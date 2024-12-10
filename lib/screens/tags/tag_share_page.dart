@@ -7,7 +7,7 @@ import 'package:reward/models/tag/tag_share_request.dart';
 class TagSharePage extends StatefulWidget {
   final String tagId;
 
-  const TagSharePage({Key? key, required this.tagId}) : super(key: key);
+  const TagSharePage({super.key, required this.tagId});
 
   @override
   State<TagSharePage> createState() => _TagSharePageState();

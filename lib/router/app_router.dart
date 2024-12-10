@@ -11,6 +11,8 @@ import '../screens/platform/platform_register_page.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/tags/tag_share_page.dart';
+import '../screens/payment/naver_pay_screen.dart';
+import '../screens/payment/charge_screen.dart';
 
 final router = GoRouter(
   initialLocation: '/',
@@ -18,17 +20,15 @@ final router = GoRouter(
   redirect: (context, state) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final locale = Localizations.localeOf(context).languageCode;
-    
+
     // 초기화가 완료될 때까지 대기
     if (!authProvider.isInitialized) {
       await authProvider.initializeAuth();
     }
-    
+
     // 현재 경로에서 해시(#)와 쿼리 파라미터 제거
-    final path = state.uri.path
-        .replaceAll('#', '')
-        .split('?')[0];  // 쿼리 파라미터 제거
-    
+    final path = state.uri.path.replaceAll('#', '').split('?')[0]; // 쿼리 파라미터 제거
+
     if (kDebugMode) {
       print('🔄 Router Redirect:');
       print('Current path: $path');
@@ -36,23 +36,24 @@ final router = GoRouter(
       print('isAuthenticated: ${authProvider.isAuthenticated}');
       print('Locale: $locale');
     }
-    
+
     // callback 페지인 경우 locale을 추가하여 리다이렉트
     if (path == '/auth/callback') {
       return '/$locale/auth/callback';
     }
-    
+
     // 인증이 필요하지 않은 경로들
     final publicPaths = [
       '/$locale/login',
       '/$locale/signin',
-      '/auth/callback',  // locale 없는 버전도 추가
+      '/auth/callback', // locale 없는 버전도 추가
       '/$locale/auth/callback',
     ];
 
     // 루트 경로나 locale만 있는 경로 처리
     if (path == '/' || path == '/$locale') {
-      final redirectPath = authProvider.isAuthenticated ? '/$locale/home' : '/$locale/login';
+      final redirectPath =
+          authProvider.isAuthenticated ? '/$locale/home' : '/$locale/login';
       if (kDebugMode) print('⏩ Root path redirect: $redirectPath');
       return redirectPath;
     }
@@ -128,6 +129,20 @@ final router = GoRouter(
       builder: (context, state) => TagSharePage(
         tagId: state.pathParameters['tagId']!,
       ),
+    ),
+    GoRoute(
+      path: '/:locale/payments/naver',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return NaverPayScreen(
+          amount: (extra['amount'] as num?)?.toDouble() ?? 0.0,
+          itemName: extra['itemName'] as String? ?? '리워드 예산 충전',
+        );
+      },
+    ),
+    GoRoute(
+      path: '/:locale/charge',
+      builder: (context, state) => const ChargeScreen(),
     ),
   ],
 );

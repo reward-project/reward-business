@@ -37,17 +37,9 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       debugPrint('Current auth state - isAuthenticated: ${authProvider.isAuthenticated}');
-      if (authProvider.user == null) {
-        debugPrint('Initializing user info...');
-        authProvider.initializeUserInfo().then((_) {
-          debugPrint('User info initialized, loading missions...');
-          _loadStoreMissions();
+      debugPrint('User info already exists, loading missions...');
+      _loadStoreMissions();
         });
-      } else {
-        debugPrint('User info already exists, loading missions...');
-        _loadStoreMissions();
-      }
-    });
   }
 
   @override
@@ -521,7 +513,7 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
                             Navigator.pop(context);
                           },
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),

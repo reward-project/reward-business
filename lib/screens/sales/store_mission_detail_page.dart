@@ -6,9 +6,9 @@ class StoreMissionDetailPage extends StatelessWidget {
   final StoreMissionResponse mission;
 
   const StoreMissionDetailPage({
-    Key? key,
+    super.key,
     required this.mission,
-  }) : super(key: key);
+  });
 
   Widget _buildInfoSection(String title, List<Widget> children) {
     return Column(

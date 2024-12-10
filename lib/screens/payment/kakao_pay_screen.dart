@@ -7,10 +7,10 @@ class KakaoPayScreen extends StatefulWidget {
   final String itemName;
 
   const KakaoPayScreen({
-    Key? key, 
+    super.key, 
     required this.amount,
     required this.itemName,
-  }) : super(key: key);
+  });
 
   @override
   State<KakaoPayScreen> createState() => _KakaoPayScreenState();

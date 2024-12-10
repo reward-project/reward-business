@@ -18,12 +18,12 @@ class RewardForm extends StatefulWidget {
   final Function(String?) onDomainChanged;
 
   const RewardForm({
-    Key? key,
+    super.key,
     required this.formKey,
     required this.onSubmit,
     required this.selectedDomain,
     required this.onDomainChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<RewardForm> createState() => _RewardFormState();
@@ -193,11 +193,11 @@ class _RewardFormState extends State<RewardForm> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Row(
+          title: const Row(
             children: [
-              const Icon(Icons.info_outline, color: Color(0xFF6B7280)),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.info_outline, color: Color(0xFF6B7280)),
+              SizedBox(width: 8),
+              Text(
                 'CPC 단가란?',
                 style: TextStyle(
                   fontSize: 16,

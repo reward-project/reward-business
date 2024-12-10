@@ -14,13 +14,13 @@ class RewardWritePage extends StatefulWidget {
 
 class _RewardWritePageState extends State<RewardWritePage> {
   final _formKey = GlobalKey<FormState>();
-  Map<String, dynamic> _formData = {};
+  final Map<String, dynamic> _formData = {};
   String? _selectedDomain;
 
   Future<void> _handleSubmit(Map<String, dynamic> data) async {
     try {
       debugPrint('Submitting form with data: $data');
-      
+
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final user = await authProvider.user;
 

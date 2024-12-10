@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:reward/models/store_mission/store_mission_response.dart';
 import 'package:reward/models/store_mission/store_mission_stats.dart';

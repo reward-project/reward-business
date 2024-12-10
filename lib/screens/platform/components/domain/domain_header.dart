@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
 class DomainHeader extends StatelessWidget {
-  const DomainHeader({Key? key}) : super(key: key);
+  const DomainHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
           '도메인',
           style: TextStyle(

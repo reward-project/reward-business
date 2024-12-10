@@ -16,7 +16,7 @@ class PlatformFormSection extends StatelessWidget {
   final VoidCallback onSubmit;
 
   const PlatformFormSection({
-    Key? key,
+    super.key,
     required this.formKey,
     required this.platformNameController,
     required this.displayNameController,
@@ -27,7 +27,7 @@ class PlatformFormSection extends StatelessWidget {
     required this.onAddDomain,
     required this.onRemoveDomain,
     required this.onSubmit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

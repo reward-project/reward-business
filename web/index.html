@@ -32,14 +32,13 @@
   <title>reward</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- CSP 설정 추가 -->
-  <meta http-equiv="Content-Security-Policy" 
-        content="default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:;">
+  <!-- 네이버페이 SDK 추가 -->
+  <script src="https://nsp.pay.naver.com/sdk/js/naverpay.min.js"></script>
 
-  <!-- CORS 메타 태그 추가 -->
+  <!-- CSP 설정 수정 -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src * 'unsafe-inline' 'unsafe-eval'; 
-    script-src * 'unsafe-inline' 'unsafe-eval'; 
+    script-src * 'unsafe-inline' 'unsafe-eval' https://nsp.pay.naver.com; 
     connect-src * 'unsafe-inline'; 
     img-src * data: blob: 'unsafe-inline'; 
     frame-src *; 

@@ -6,10 +6,10 @@ class RewardTagInput extends StatefulWidget {
   final Function(List<String>) onTagsChanged;
 
   const RewardTagInput({
-    Key? key,
+    super.key,
     required this.tags,
     required this.onTagsChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<RewardTagInput> createState() => _RewardTagInputState();

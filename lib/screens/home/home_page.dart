@@ -322,6 +322,11 @@ class HomePage extends StatelessWidget {
             selected: true,
             onTap: () => context.go('/$currentLocale/home'),
           ),
+          ListTile(
+            leading: const Icon(Icons.account_balance_wallet),
+            title: const Text('리워드 충전'),
+            onTap: () => context.go('/$currentLocale/charge'),
+          ),
           ExpansionTile(
             leading: const Icon(Icons.list),
             title: const Text('리워드 관리'),

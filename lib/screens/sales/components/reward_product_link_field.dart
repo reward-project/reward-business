@@ -9,14 +9,14 @@ class RewardProductLinkField extends StatefulWidget {
   final Function(String?) onDomainChanged;
 
   const RewardProductLinkField({
-    Key? key,
+    super.key,
     required this.productLinkController,
     required this.selectedDomain,
     required this.domains,
     required this.isLoadingDomains,
     required this.selectedPlatform,
     required this.onDomainChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<RewardProductLinkField> createState() => _RewardProductLinkFieldState();
@@ -158,17 +158,17 @@ class _RewardProductLinkFieldState extends State<RewardProductLinkField> {
                       horizontal: 14,
                       vertical: 14,
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: const BorderRadius.horizontal(
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.horizontal(
                         right: Radius.circular(8),
                       ),
-                      borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
+                      borderSide: BorderSide(color: Color(0xFFD0D5DD)),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: const BorderRadius.horizontal(
+                    enabledBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.horizontal(
                         right: Radius.circular(8),
                       ),
-                      borderSide: const BorderSide(color: Color(0xFFD0D5DD)),
+                      borderSide: BorderSide(color: Color(0xFFD0D5DD)),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: const BorderRadius.horizontal(
@@ -176,11 +176,11 @@ class _RewardProductLinkFieldState extends State<RewardProductLinkField> {
                       ),
                       borderSide: BorderSide(color: Theme.of(context).primaryColor),
                     ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: const BorderRadius.horizontal(
+                    errorBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.horizontal(
                         right: Radius.circular(8),
                       ),
-                      borderSide: const BorderSide(color: Colors.red),
+                      borderSide: BorderSide(color: Colors.red),
                     ),
                   ),
                   validator: (value) {

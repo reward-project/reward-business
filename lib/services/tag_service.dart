@@ -1,9 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:reward/models/tag/tag_share_request.dart';
 import 'package:reward/services/dio_service.dart';
-import 'package:reward/services/dio_service.dart';
-import 'package:reward/models/tag/tag_share_request.dart';
 
 class TagService {
   static Future<void> shareTag({

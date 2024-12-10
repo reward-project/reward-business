@@ -14,7 +14,7 @@ class RewardInputField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
 
   const RewardInputField({
-    Key? key,
+    super.key,
     required this.label,
     required this.controller,
     required this.placeholder,
@@ -25,7 +25,7 @@ class RewardInputField extends StatelessWidget {
     this.validator,
     this.keyboardType,
     this.inputFormatters,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

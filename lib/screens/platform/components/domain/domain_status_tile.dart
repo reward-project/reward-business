@@ -4,9 +4,9 @@ class DomainStatusTile extends StatelessWidget {
   final Map<String, dynamic> domain;
 
   const DomainStatusTile({
-    Key? key,
+    super.key,
     required this.domain,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
