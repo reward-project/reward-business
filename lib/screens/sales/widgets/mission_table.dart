@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:reward/models/store_mission/store_mission_response.dart';
 import 'package:reward/screens/sales/widgets/mission_status_chip.dart';
 import 'package:reward/services/store_mission_command_service.dart';
+import 'package:reward/utils/responsive.dart';
 
 class MissionTable extends StatelessWidget {
   final List<StoreMissionResponse> missions;
@@ -68,6 +69,8 @@ class MissionTable extends StatelessWidget {
   }
 
   Widget _buildTableHeader(BuildContext context) {
+    final bool isDesktopView = isDesktop(context);
+
     return Container(
       color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -90,11 +93,140 @@ class MissionTable extends StatelessWidget {
           const Expanded(flex: 3, child: Text('미션명', style: TextStyle(fontWeight: FontWeight.w600))),
           const Expanded(child: Text('상태', style: TextStyle(fontWeight: FontWeight.w600))),
           const Expanded(flex: 2, child: Text('리워드 단가', style: TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+          if (isDesktopView) ...[
+            const SizedBox(width: 16),
+            const Expanded(flex: 3, child: Text('기간', style: TextStyle(fontWeight: FontWeight.w600))),
+          ],
           const Expanded(flex: 2, child: Text('사용량', style: TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
           const Expanded(flex: 2, child: Text('잔액', style: TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
-          const Expanded(flex: 2, child: Text('종료일', style: TextStyle(fontWeight: FontWeight.w600))),
           const SizedBox(width: 48),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTableRow(BuildContext context, StoreMissionResponse mission) {
+    final bool isDesktopView = isDesktop(context);
+    final bool isActive = mission.status == 'ACTIVE';
+    final bool isPending = mission.status == 'PENDING';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onMissionTap(mission),
+        child: Container(
+          color: selectedMissionIds.contains(mission.id)
+              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1)
+              : null,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 48,
+                child: Checkbox(
+                  value: selectedMissionIds.contains(mission.id),
+                  onChanged: (selected) => onSelectionChanged(
+                    selected == true
+                        ? {...selectedMissionIds, mission.id}
+                        : selectedMissionIds.where((id) => id != mission.id).toSet(),
+                  ),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  mission.reward.rewardName,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: MissionStatusChip(status: mission.status),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '${NumberFormat('#,###').format(mission.reward.rewardAmount)}원',
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              if (isDesktopView) ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    '${DateFormat('MM/dd HH:mm').format(mission.reward.startDate)} - ${DateFormat('MM/dd HH:mm').format(mission.reward.endDate)}',
+                  ),
+                ),
+              ],
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '${NumberFormat('#,###').format(mission.totalRewardUsage)}원',
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  '${NumberFormat('#,###').format(mission.remainingRewardBudget)}원',
+                  textAlign: TextAlign.right,
+                ),
+              ),
+              SizedBox(
+                width: 48,
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'view',
+                      child: Text('상세보기'),
+                    ),
+                    if (isActive || isPending) ...[
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('수정'),
+                      ),
+                    ],
+                    if (isPending) ...[
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('삭제'),
+                      ),
+                    ],
+                    if (isActive) ...[
+                      const PopupMenuItem(
+                        value: 'COMPLETED',
+                        child: Text('완료로 변경'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'FAILED',
+                        child: Text('실패로 변경'),
+                      ),
+                    ] else if (isPending) ...[
+                      const PopupMenuItem(
+                        value: 'ACTIVE',
+                        child: Text('진행중으로 변경'),
+                      ),
+                    ],
+                  ],
+                  onSelected: (value) {
+                    if (value == 'view') {
+                      onMissionTap(mission);
+                    } else {
+                      onSelectionChanged(
+                        selectedMissionIds.where((id) => id != mission.id).toSet(),
+                      );
+                      onRefresh();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -103,31 +235,7 @@ class MissionTable extends StatelessWidget {
     return ListView.separated(
       itemCount: missions.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final mission = missions[index];
-        return _MissionTableRow(
-          mission: mission,
-          isSelected: selectedMissionIds.contains(mission.id),
-          onTap: () => onMissionTap(mission),
-          onSelectionChanged: (selected) {
-            final newSelection = Set<int>.from(selectedMissionIds);
-            if (selected) {
-              newSelection.add(mission.id);
-            } else {
-              newSelection.remove(mission.id);
-            }
-            onSelectionChanged(newSelection);
-          },
-          onStatusChanged: (status) async {
-            await StoreMissionCommandService.updateMissionStatus(
-              context: context,
-              missionId: mission.id,
-              newStatus: status,
-            );
-            onRefresh();
-          },
-        );
-      },
+      itemBuilder: (context, index) => _buildTableRow(context, missions[index]),
     );
   }
 
@@ -182,136 +290,6 @@ class MissionTable extends StatelessWidget {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MissionTableRow extends StatelessWidget {
-  final StoreMissionResponse mission;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Function(bool) onSelectionChanged;
-  final Function(String) onStatusChanged;
-
-  const _MissionTableRow({
-    required this.mission,
-    required this.isSelected,
-    required this.onTap,
-    required this.onSelectionChanged,
-    required this.onStatusChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isActive = mission.status == 'ACTIVE';
-    final bool isPending = mission.status == 'PENDING';
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1)
-              : null,
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 48,
-                child: Checkbox(
-                  value: isSelected,
-                  onChanged: (selected) => onSelectionChanged(selected!),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  mission.reward.rewardName,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: MissionStatusChip(status: mission.status),
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '${NumberFormat('#,###').format(mission.reward.rewardAmount)}원',
-                  textAlign: TextAlign.right,
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '${NumberFormat('#,###').format(mission.totalRewardUsage)}원',
-                  textAlign: TextAlign.right,
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '${NumberFormat('#,###').format(mission.remainingRewardBudget)}원',
-                  textAlign: TextAlign.right,
-                ),
-              ),
-              Expanded(
-                flex: 2,
-                child: Text(DateFormat('yy/MM/dd').format(mission.reward.endDate)),
-              ),
-              SizedBox(
-                width: 48,
-                child: PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'view',
-                      child: Text('상세보기'),
-                    ),
-                    if (isActive || isPending) ...[
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('수정'),
-                      ),
-                    ],
-                    if (isPending) ...[
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('삭제'),
-                      ),
-                    ],
-                    if (isActive) ...[
-                      const PopupMenuItem(
-                        value: 'COMPLETED',
-                        child: Text('완료로 변경'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'FAILED',
-                        child: Text('실패로 변경'),
-                      ),
-                    ] else if (isPending) ...[
-                      const PopupMenuItem(
-                        value: 'ACTIVE',
-                        child: Text('진행중으로 변경'),
-                      ),
-                    ],
-                  ],
-                  onSelected: (value) {
-                    if (value == 'view') {
-                      onTap();
-                    } else {
-                      onStatusChanged(value);
-                    }
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

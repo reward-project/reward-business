@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:reward/models/store_mission/store_mission_response.dart';
 import 'package:reward/models/store_mission/store_mission_stats.dart';
+import 'package:reward/screens/sales/widgets/mission_detail_view.dart';
 import 'package:reward/screens/sales/widgets/mission_stats_card.dart';
 import 'package:reward/screens/sales/widgets/mission_table.dart';
 import 'package:reward/services/store_mission_query_service.dart';
@@ -55,8 +56,15 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
   }
 
   void _navigateToDetail(StoreMissionResponse mission) {
-    final locale = Localizations.localeOf(context).languageCode;
-    context.go('/$locale/sales/mission/${mission.id}');
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: MissionDetailView(
+          mission: mission,
+          onClose: () => Navigator.pop(context),
+        ),
+      ),
+    );
   }
 
   Widget _buildFilterSection() {
