@@ -90,14 +90,41 @@ class MissionTable extends StatelessWidget {
               },
             ),
           ),
-          const Expanded(flex: 3, child: Text('미션명', style: TextStyle(fontWeight: FontWeight.w600))),
-          const Expanded(child: Text('상태', style: TextStyle(fontWeight: FontWeight.w600))),
-          const Expanded(flex: 2, child: Text('리워드 단가', style: TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
-          if (isDesktopView) ...[
-            const SizedBox(width: 16),
-            const Expanded(flex: 3, child: Text('기간', style: TextStyle(fontWeight: FontWeight.w600))),
-          ],
-          const Expanded(flex: 2, child: Text('사용량', style: TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+          const Expanded(flex: 4, child: Text('미션명', style: TextStyle(fontWeight: FontWeight.w600))),
+          const Expanded(
+            flex: 2, 
+            child: Text(
+              '상태', 
+              style: TextStyle(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const Expanded(
+            flex: 2, 
+            child: Text(
+              '단가', 
+              style: TextStyle(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 24),
+          if (isDesktopView)
+            const Expanded(
+              flex: 3, 
+              child: Text(
+                '기간', 
+                style: TextStyle(fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          const Expanded(
+            flex: 2, 
+            child: Text(
+              '사용량', 
+              style: TextStyle(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+          ),
           const Expanded(flex: 2, child: Text('잔액', style: TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
           const SizedBox(width: 48),
         ],
@@ -133,39 +160,42 @@ class MissionTable extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: Text(
                   mission.reward.rewardName,
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
               ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: MissionStatusChip(status: mission.status),
+                flex: 2,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: MissionStatusChip(status: mission.status),
+                  ),
                 ),
               ),
               Expanded(
                 flex: 2,
                 child: Text(
                   '${NumberFormat('#,###').format(mission.reward.rewardAmount)}원',
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.center,
                 ),
               ),
-              if (isDesktopView) ...[
-                const SizedBox(width: 16),
+              const SizedBox(width: 24),
+              if (isDesktopView)
                 Expanded(
                   flex: 3,
                   child: Text(
-                    '${DateFormat('MM/dd HH:mm').format(mission.reward.startDate)} - ${DateFormat('MM/dd HH:mm').format(mission.reward.endDate)}',
+                    '${DateFormat('MM/dd').format(mission.reward.startDate)} - ${DateFormat('MM/dd').format(mission.reward.endDate)}',
+                    textAlign: TextAlign.center,
                   ),
                 ),
-              ],
               Expanded(
                 flex: 2,
                 child: Text(
                   '${NumberFormat('#,###').format(mission.totalRewardUsage)}원',
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.center,
                 ),
               ),
               Expanded(
