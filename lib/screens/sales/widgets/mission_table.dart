@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:reward/models/store_mission/store_mission_response.dart';
 import 'package:reward/screens/sales/widgets/mission_status_chip.dart';
@@ -80,7 +81,8 @@ class MissionTable extends StatelessWidget {
             width: 48,
             child: Checkbox(
               value: selectedMissionIds.length == missions.length,
-              tristate: selectedMissionIds.isNotEmpty && selectedMissionIds.length != missions.length,
+              tristate: selectedMissionIds.isNotEmpty &&
+                  selectedMissionIds.length != missions.length,
               onChanged: (bool? value) {
                 if (value == true) {
                   onSelectionChanged(missions.map((m) => m.id).toSet());
@@ -90,19 +92,22 @@ class MissionTable extends StatelessWidget {
               },
             ),
           ),
-          const Expanded(flex: 4, child: Text('미션명', style: TextStyle(fontWeight: FontWeight.w600))),
           const Expanded(
-            flex: 2, 
+              flex: 4,
+              child:
+                  Text('미션명', style: TextStyle(fontWeight: FontWeight.w600))),
+          const Expanded(
+            flex: 2,
             child: Text(
-              '상태', 
+              '상태',
               style: TextStyle(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
           ),
           const Expanded(
-            flex: 2, 
+            flex: 2,
             child: Text(
-              '단가', 
+              '단가',
               style: TextStyle(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
@@ -110,22 +115,26 @@ class MissionTable extends StatelessWidget {
           const SizedBox(width: 24),
           if (isDesktopView)
             const Expanded(
-              flex: 3, 
+              flex: 3,
               child: Text(
-                '기간', 
+                '기간',
                 style: TextStyle(fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
             ),
           const Expanded(
-            flex: 2, 
+            flex: 2,
             child: Text(
-              '사용량', 
+              '사용량',
               style: TextStyle(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
           ),
-          const Expanded(flex: 2, child: Text('잔액', style: TextStyle(fontWeight: FontWeight.w600), textAlign: TextAlign.right)),
+          const Expanded(
+              flex: 2,
+              child: Text('잔액',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.right)),
           const SizedBox(width: 48),
         ],
       ),
@@ -135,7 +144,7 @@ class MissionTable extends StatelessWidget {
   Widget _buildTableRow(BuildContext context, StoreMissionResponse mission) {
     final bool isDesktopView = isDesktop(context);
     final bool isActive = mission.status == 'ACTIVE';
-    final bool isPending = mission.status == 'PENDING';
+    final bool isScheduled = mission.status == 'SCHEDULED';
 
     return Material(
       color: Colors.transparent,
@@ -155,7 +164,9 @@ class MissionTable extends StatelessWidget {
                   onChanged: (selected) => onSelectionChanged(
                     selected == true
                         ? {...selectedMissionIds, mission.id}
-                        : selectedMissionIds.where((id) => id != mission.id).toSet(),
+                        : selectedMissionIds
+                            .where((id) => id != mission.id)
+                            .toSet(),
                   ),
                 ),
               ),
@@ -214,13 +225,13 @@ class MissionTable extends StatelessWidget {
                       value: 'view',
                       child: Text('상세보기'),
                     ),
-                    if (isActive || isPending) ...[
+                    if (isActive || isScheduled) ...[
                       const PopupMenuItem(
                         value: 'edit',
                         child: Text('수정'),
                       ),
                     ],
-                    if (isPending) ...[
+                    if (isScheduled) ...[
                       const PopupMenuItem(
                         value: 'delete',
                         child: Text('삭제'),
@@ -228,26 +239,31 @@ class MissionTable extends StatelessWidget {
                     ],
                     if (isActive) ...[
                       const PopupMenuItem(
-                        value: 'COMPLETED',
-                        child: Text('완료로 변경'),
+                        value: 'ACTIVE',
+                        child: Text('진행중으로 변경'),
                       ),
-                      const PopupMenuItem(
-                        value: 'FAILED',
-                        child: Text('실패로 변경'),
-                      ),
-                    ] else if (isPending) ...[
+                    ] else if (isScheduled) ...[
                       const PopupMenuItem(
                         value: 'ACTIVE',
                         child: Text('진행중으로 변경'),
                       ),
                     ],
                   ],
-                  onSelected: (value) {
+                  onSelected: (value) async {
                     if (value == 'view') {
                       onMissionTap(mission);
+                    } else if (value == 'edit') {
+                      final locale =
+                          Localizations.localeOf(context).languageCode;
+                      context.go('/$locale/sales/reward-write',
+                          extra: {'mission': mission});
+                    } else if (value == 'delete') {
+                      // _handleDeleteids: selectedMissionIds.toList()(context, mission);
                     } else {
                       onSelectionChanged(
-                        selectedMissionIds.where((id) => id != mission.id).toSet(),
+                        selectedMissionIds
+                            .where((id) => id != mission.id)
+                            .toSet(),
                       );
                       onRefresh();
                     }
@@ -257,6 +273,32 @@ class MissionTable extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _handleDelete(BuildContext context, StoreMissionResponse mission) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('리워드 삭제'),
+        content: const Text('정말로 이 리워드를 삭제하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              StoreMissionCommandService.deleteStoreMission(
+                context: context,
+                id: mission.id,
+              );
+            },
+            child: const Text('삭제'),
+          ),
+        ],
       ),
     );
   }
@@ -295,7 +337,8 @@ class MissionTable extends StatelessWidget {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('미션 삭제'),
-                  content: Text('선택한 ${selectedMissionIds.length}개의 미션을 삭제하시겠습니까?'),
+                  content:
+                      Text('선택한 ${selectedMissionIds.length}개의 미션을 삭제하시겠습니까?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -308,12 +351,12 @@ class MissionTable extends StatelessWidget {
                   ],
                 ),
               );
-              
+
               if (confirm == true) {
-                await StoreMissionCommandService.deleteStoreMissions(
-                  context: context,
-                  missionIds: selectedMissionIds.toList(),
-                );
+                // await StoreMissionCommandService.deleteStoreMissions(
+                  // context: context,
+                  // ids: selectedMissionIds.toList(),
+                // );
                 onSelectionChanged({});
                 onRefresh();
               }

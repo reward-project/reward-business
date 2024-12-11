@@ -10,53 +10,110 @@ import 'package:intl/intl.dart';
 import 'reward/reward_tag_input.dart';
 
 class RewardForm extends StatefulWidget {
-  final GlobalKey<FormState> formKey;
+  final Map<String, dynamic>? formData;
   final Function(Map<String, dynamic>) onSubmit;
-  final String? selectedDomain;
-  final Function(String?) onDomainChanged;
 
   const RewardForm({
-    super.key,
-    required this.formKey,
+    Key? key,
+    this.formData,
     required this.onSubmit,
-    required this.selectedDomain,
-    required this.onDomainChanged,
-  });
+  }) : super(key: key);
 
   @override
   State<RewardForm> createState() => _RewardFormState();
 }
 
 class _RewardFormState extends State<RewardForm> {
+  final _platformService = PlatformService();
+  final _rewardAmountController = TextEditingController();
+  final _maxRewardsPerDayController = TextEditingController();
   final _rewardNameController = TextEditingController();
   final _storeNameController = TextEditingController();
   final _productLinkController = TextEditingController();
   final _keywordController = TextEditingController();
   final _productIdController = TextEditingController();
-  final _optionIdController = TextEditingController();
-  final _rewardAmountController = TextEditingController();
-  final _maxRewardsPerDayController = TextEditingController();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
-  final _platformService = PlatformService();
+  final _formKey = GlobalKey<FormState>();
 
-  int? _selectedPlatform;
+  List<Map<String, dynamic>> _domains = [];
+  List<Platform> _platforms = [];
+  bool _isLoadingDomains = false;
+  bool _isLoadingPlatforms = false;
   String? _selectedDomain;
+  int? _selectedPlatform;
+  List<String> _tags = [];
   DateTime? _startDate;
   DateTime? _endDate;
   double _cpcAmount = 0;
   double _totalMaxAmount = 0;
-  List<Platform> _platforms = [];
-  List<Map<String, dynamic>> _domains = [];
-  bool _isLoadingPlatforms = false;
-  bool _isLoadingDomains = false;
-  List<String> _tags = [];
 
   @override
   void initState() {
     super.initState();
+    debugPrint('RewardForm initState');
+    debugPrint('Initial form data: ${widget.formData}');
+
+    if (widget.formData != null) {
+      debugPrint('Initializing form with data: ${widget.formData}');
+      
+      // Basic Info
+      _rewardNameController.text = widget.formData!['rewardName']?.toString() ?? '';
+      debugPrint('Reward Name: ${_rewardNameController.text}');
+      
+      // Platform Info
+      _selectedPlatform = widget.formData!['platformId'];
+      debugPrint('Selected Platform: $_selectedPlatform');
+      
+      _storeNameController.text = widget.formData!['storeName']?.toString() ?? '';
+      _productLinkController.text = widget.formData!['productLink']?.toString() ?? '';
+      _keywordController.text = widget.formData!['keyword']?.toString() ?? '';
+      _productIdController.text = widget.formData!['productId']?.toString() ?? '';
+      debugPrint('Store Info:');
+      debugPrint('- Store Name: ${_storeNameController.text}');
+      debugPrint('- Product Link: ${_productLinkController.text}');
+      debugPrint('- Keyword: ${_keywordController.text}');
+      debugPrint('- Product ID: ${_productIdController.text}');
+      
+      // Amount Info
+      if (widget.formData!['rewardAmount'] != null) {
+        _rewardAmountController.text = widget.formData!['rewardAmount'].toString();
+      }
+      if (widget.formData!['maxRewardsPerDay'] != null) {
+        _maxRewardsPerDayController.text = widget.formData!['maxRewardsPerDay'].toString();
+      }
+      debugPrint('Amount Info:');
+      debugPrint('- Reward Amount: ${_rewardAmountController.text}');
+      debugPrint('- Max Rewards Per Day: ${_maxRewardsPerDayController.text}');
+      
+      // Date Info
+      _startDate = widget.formData!['startDate'];
+      _endDate = widget.formData!['endDate'];
+      if (_startDate != null) {
+        _startDateController.text = _formatDate(_startDate!);
+      }
+      if (_endDate != null) {
+        _endDateController.text = _formatDate(_endDate!);
+      }
+      debugPrint('Date Info:');
+      debugPrint('- Start Date: ${_startDateController.text}');
+      debugPrint('- End Date: ${_endDateController.text}');
+      
+      // Tags
+      _tags = List<String>.from(widget.formData!['tags'] ?? []);
+      debugPrint('Tags: $_tags');
+      
+      _selectedDomain = widget.formData!['selectedDomain'];
+      debugPrint('Selected Domain: $_selectedDomain');
+      
+      if (_selectedPlatform != null) {
+        _loadPlatformDomains(_selectedPlatform.toString());
+      }
+    }
+
     _rewardAmountController.addListener(_updateCalculations);
     _maxRewardsPerDayController.addListener(_updateCalculations);
+    _loadPlatforms();
   }
 
   @override
@@ -74,7 +131,6 @@ class _RewardFormState extends State<RewardForm> {
     _productLinkController.dispose();
     _keywordController.dispose();
     _productIdController.dispose();
-    _optionIdController.dispose();
     _rewardAmountController.dispose();
     _maxRewardsPerDayController.dispose();
     _startDateController.dispose();
@@ -101,19 +157,35 @@ class _RewardFormState extends State<RewardForm> {
   Future<void> _loadPlatformDomains(String platformId) async {
     setState(() {
       _isLoadingDomains = true;
-      _selectedDomain = null;
       _domains = [];
+      _selectedDomain = null;  // Reset selected domain when loading new domains
     });
 
     try {
+      debugPrint('Loading domains for platform: $platformId');
       final domains = await _platformService.getPlatformDomains(context, platformId);
+      debugPrint('Loaded domains: $domains');
+      
       setState(() {
         _domains = domains;
         if (domains.isNotEmpty) {
-          _selectedDomain = domains[0]['domain'];
+          if (widget.formData != null && widget.formData!['selectedDomain'] != null) {
+            // Try to find the previously selected domain
+            final previousDomain = widget.formData!['selectedDomain'];
+            final domainExists = domains.any((d) => d['domain'] == previousDomain);
+            if (domainExists) {
+              _selectedDomain = previousDomain;
+            } else {
+              _selectedDomain = domains[0]['domain'];
+            }
+          } else {
+            _selectedDomain = domains[0]['domain'];
+          }
         }
       });
+      debugPrint('Selected domain: $_selectedDomain');
     } catch (e) {
+      debugPrint('Error loading domains: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -128,15 +200,19 @@ class _RewardFormState extends State<RewardForm> {
   }
 
   void _updateCalculations() {
+    final rewardAmount = double.tryParse(_rewardAmountController.text.replaceAll(',', '')) ?? 0;
+    final maxRewardsPerDay = int.tryParse(_maxRewardsPerDayController.text) ?? 0;
+    
     setState(() {
-      double rewardAmount = double.tryParse(_rewardAmountController.text.replaceAll(',', '')) ?? 0;
       _cpcAmount = rewardAmount * 3;
-
-      int maxRewardsPerDay = int.tryParse(_maxRewardsPerDayController.text) ?? 0;
-      int totalDays = _endDate != null && _startDate != null
-          ? _endDate!.difference(_startDate!).inDays + 1
-          : 0;
-      _totalMaxAmount = _cpcAmount * maxRewardsPerDay * totalDays;
+      
+      if (_startDate != null && _endDate != null) {
+        final difference = _endDate!.difference(_startDate!);
+        final totalDays = difference.inDays + 1;
+        _totalMaxAmount = _cpcAmount * maxRewardsPerDay * totalDays;
+      } else {
+        _totalMaxAmount = 0;
+      }
     });
   }
 
@@ -243,27 +319,53 @@ class _RewardFormState extends State<RewardForm> {
     );
   }
 
-  void _handleSubmit() {
-    if (widget.formKey.currentState!.validate()) {
-      if (_startDate == null || _endDate == null || _selectedPlatform == null) {
+  Future<void> _handleSubmit() async {
+    if (_formKey.currentState!.validate()) {
+      debugPrint('Form submission - Selected Platform: $_selectedPlatform');
+      debugPrint('Form submission - Selected Domain: $_selectedDomain');
+      debugPrint('Form submission - Product Link: ${_productLinkController.text}');
+
+      if (_selectedPlatform == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('플랫폼을 선택해주세요.'),
+            backgroundColor: Colors.red,
+          ),
+        );
         return;
       }
 
-      widget.onSubmit({
+      String fullUrl;
+      try {
+        fullUrl = _buildFullUrl(_productLinkController.text);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final data = {
         'rewardName': _rewardNameController.text,
-        'platformId': _selectedPlatform,
         'storeName': _storeNameController.text,
-        'productLink': _buildFullUrl(_selectedDomain, _productLinkController.text),
+        'platformId': _selectedPlatform,
+        'selectedDomain': _selectedDomain,
+        'productLink': fullUrl,
         'keyword': _keywordController.text,
         'productId': _productIdController.text,
-        'optionId': _optionIdController.text,
         'startDate': _startDate,
         'endDate': _endDate,
-        'rewardAmount': double.parse(_rewardAmountController.text.replaceAll(',', '')),
+        'rewardAmount': int.tryParse(_rewardAmountController.text.replaceAll(',', '')) ?? 0,
         'totalBudget': _totalMaxAmount,
-        'maxRewardsPerDay': int.parse(_maxRewardsPerDayController.text),
+        'maxRewardsPerDay': int.tryParse(_maxRewardsPerDayController.text) ?? 0,
         'tags': _tags,
-      });
+      };
+
+      debugPrint('Submitting form data: $data');
+      widget.onSubmit(data);
     }
   }
 
@@ -303,67 +405,64 @@ class _RewardFormState extends State<RewardForm> {
     }
   }
 
-  String _buildFullUrl(String? domain, String productLink) {
-    if (domain == null || domain.isEmpty || productLink.isEmpty) {
-      throw Exception('도메인과 상품 링크를 모두 입력해주세요.');
+  String _buildFullUrl(String productLink) {
+    if (productLink.isEmpty) {
+      throw Exception('상품 링크를 입력해주세요.');
     }
 
-    // 이미 전체 URL인 경우 그대로 반환
     if (productLink.startsWith('http://') || productLink.startsWith('https://')) {
       return productLink;
     }
 
-    // 슬래시로 시작하지 않는 경우 추가
-    final cleanPath = productLink.startsWith('/') ? productLink : '/$productLink';
-    
-    // 도메인과 경로 결합하여 전체 URL 생성
-    return 'https://$domain$cleanPath';
+    if (_selectedDomain == null) {
+      throw Exception('도메인을 선택해주세요.');
+    }
+
+    final cleanPath = productLink.startsWith('/') ? productLink.substring(1) : productLink;
+    return 'https://${_selectedDomain}/$cleanPath';
   }
 
   @override
   Widget build(BuildContext context) {
     return Form(
-      key: widget.formKey,
+      key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           RewardBasicInfo(
             rewardNameController: _rewardNameController,
-            storeNameController: _storeNameController,
           ),
           const SizedBox(height: 24),
           RewardPlatformInfo(
             platforms: _platforms,
             selectedPlatform: _selectedPlatform,
-            isLoadingPlatforms: _isLoadingPlatforms,
-            onPlatformChanged: (int? newValue) {
+            onPlatformChanged: (newValue) {
               setState(() {
                 _selectedPlatform = newValue;
-                if (newValue != null) {
-                  final platform = _platforms.firstWhere(
-                    (p) => p.id == newValue,
-                  );
-                  _loadPlatformDomains(platform.id.toString());
-                }
+                _selectedDomain = null;
               });
+              if (newValue != null) {
+                _loadPlatformDomains(newValue.toString());
+              }
             },
-            productLinkController: _productLinkController,
-            selectedDomain: _selectedDomain,
             domains: _domains,
-            isLoadingDomains: _isLoadingDomains,
-            onDomainChanged: (String? newValue) {
+            selectedDomain: _selectedDomain,
+            onDomainChanged: (newValue) {
               setState(() => _selectedDomain = newValue);
             },
+            isLoadingPlatforms: _isLoadingPlatforms,
+            isLoadingDomains: _isLoadingDomains,
+            storeNameController: _storeNameController,
+            productLinkController: _productLinkController,
             keywordController: _keywordController,
             productIdController: _productIdController,
-            optionIdController: _optionIdController,
           ),
           const SizedBox(height: 24),
           RewardAmountInfo(
             rewardAmountController: _rewardAmountController,
             maxRewardsPerDayController: _maxRewardsPerDayController,
             cpcAmount: _cpcAmount,
-            totalMaxAmount: 0,
+            totalMaxAmount: _totalMaxAmount,
             onCpcInfoPressed: () => _showCpcInfoDialog(context),
           ),
           const SizedBox(height: 24),
@@ -449,4 +548,4 @@ class _RewardFormState extends State<RewardForm> {
       ),
     );
   }
-} 
+}

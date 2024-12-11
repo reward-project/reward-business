@@ -1,105 +1,152 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import '../services/dio_service.dart';
+import 'package:intl/intl.dart'; // Added import for DateFormat
 
 class StoreMissionCommandService {
-  static Future<Map<String, dynamic>> createStoreMission({
+  static Future<void> createStoreMission({
     required BuildContext context,
-    required String rewardName,
-    required int platformId,
-    required String storeName,
-    required String productLink,
-    required String keyword,
-    required String productId,
-    required String optionId,
-    required DateTime startDate,
-    required DateTime endDate,
-    required String registrantId,
-    required double rewardAmount,
-    required double totalBudget,
-    required int maxRewardsPerDay,
-    required List<String> tags,
+    required Map<String, dynamic> formData,
   }) async {
     try {
-      final dio = DioService.instance;
+      final locale = Localizations.localeOf(context).languageCode;
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = await authProvider.user;
 
-      if (!Uri.parse(productLink).hasScheme) {
-        throw Exception('올바른 URL 형식이 아닙니다. 전체 URL을 입력해주세요.');
+      if (user == null) {
+        throw Exception('로그인이 필요합니다.');
       }
 
-      final response = await dio.post(
+      final response = await DioService.instance.post(
         '/store-missions',
         data: {
-          'rewardName': rewardName,
-          'platformId': platformId,
-          'storeName': storeName,
-          'productLink': productLink,
-          'keyword': keyword,
-          'productId': productId,
-          'optionId': optionId,
-          'startDate': startDate.toIso8601String().split('T')[0],
-          'endDate': endDate.toIso8601String().split('T')[0],
-          'registrantId': int.parse(registrantId),
-          'rewardAmount': rewardAmount,
-          'totalBudget': totalBudget,
-          'maxRewardsPerDay': maxRewardsPerDay,
-          'tags': tags,
+          'platformId': formData['platformId'],
+          'rewardName': formData['rewardName'],
+          'storeName': formData['storeName'],
+          'productLink': formData['productLink'],
+          'keyword': formData['keyword'],
+          'productId': formData['productId'],
+          'rewardAmount': formData['rewardAmount'],
+          'maxRewardsPerDay': formData['maxRewardsPerDay'],
+          'startDate': formData['startDate'].toIso8601String(),
+          'endDate': formData['endDate'].toIso8601String(),
+          'registrantId': user.userId,
+          'tags': formData['tags'],
         },
       );
 
       if (response.statusCode == 200) {
-        return response.data;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('리워드가 성공적으로 등록되었습니다.')),
+        );
+        context.go('/$locale/sales/store-mission');
       } else {
-        throw Exception('리워드 등록에 실패했습니다. Status: ${response.statusCode}');
+        throw Exception(response.data['message'] ?? '리워드 등록에 실패했습니다.');
       }
-    } on DioException catch (e) {
-      debugPrint('Dio error creating store mission: ${e.message}');
-      throw _handleDioError(e);
     } catch (e) {
-      debugPrint('Error creating store mission: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
       rethrow;
     }
   }
 
-  static Future<void> updateMissionStatus({
+  static Future<void> updateStoreMission({
     required BuildContext context,
-    required int missionId,
-    required String newStatus,
+    required int id,
+    required Map<String, dynamic> formData,
   }) async {
     try {
-      final dio = DioService.instance;
-      await dio.patch(
-        '/store-missions/$missionId/status',
-        data: {'status': newStatus},
+      final locale = Localizations.localeOf(context).languageCode;
+      final request = {
+        'id': id,
+        'rewardName': formData['rewardName'],
+        'platformId': formData['platformId'],
+        'storeName': formData['storeName'],
+        'productLink': formData['productLink'],
+        'keyword': formData['keyword'],
+        'productId': formData['productId'],
+        'rewardAmount': formData['rewardAmount'],
+        'maxRewardsPerDay': formData['maxRewardsPerDay'],
+        'startDate': formData['startDate'].toString().split(' ')[0],
+        'endDate': formData['endDate'].toString().split(' ')[0],
+        'tags': formData['tags'],
+      };
+
+      final response = await DioService.instance.put(
+        '/store-missions/$id',
+        data: request,
       );
+
+      if (response.statusCode == 200) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('미션이 성공적으로 수정되었습니다.')),
+          );
+          context.go('/$locale/sales/store-mission');
+        }
+      }
     } catch (e) {
-      debugPrint('Error updating mission status: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('미션 수정 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       rethrow;
+    }
+  }
+
+  static Future<void> deleteStoreMission({
+    required BuildContext context,
+    required int id,
+  }) async {
+    try {
+      final locale = Localizations.localeOf(context).languageCode;
+      final response = await DioService.instance.delete<Map<String, dynamic>>('/store-missions/$id');
+
+      if (response.statusCode == 200 && response.data?['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.data?['message'] ?? '리워드가 성공적으로 삭제되었습니다.')),
+        );
+        context.go('/$locale/sales/store-mission');
+      } else {
+        throw Exception(response.data?['message'] ?? '리워드 삭제에 실패했습니다.');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
 
   static Future<void> deleteStoreMissions({
     required BuildContext context,
-    required List<int> missionIds,
+    required Set<int> ids,
   }) async {
     try {
-      final dio = DioService.instance;
-      await dio.delete(
-        '/store-missions',
-        data: {'missionIds': missionIds},
+      final locale = Localizations.localeOf(context).languageCode;
+      final responses = await Future.wait(
+        ids.map((id) => DioService.instance.delete<Map<String, dynamic>>('/store-missions/$id')),
       );
+
+      if (responses.every((response) => response.statusCode == 200 && response.data?['success'] == true)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('선택한 리워드가 성공적으로 삭제되었습니다.')),
+        );
+        context.go('/$locale/sales/store-mission');
+      } else {
+        throw Exception('일부 리워드 삭제에 실패했습니다.');
+      }
     } catch (e) {
-      debugPrint('Error deleting store missions: $e');
-      rethrow;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
 
-  static Exception _handleDioError(DioException e) {
-    if (e.response?.data != null && e.response?.data is Map) {
-      final errorData = e.response?.data as Map;
-      final message = errorData['message'] ?? 'Unknown error occurred';
-      return Exception(message);
-    }
-    return Exception('Failed to create store mission: ${e.message}');
-  }
 }

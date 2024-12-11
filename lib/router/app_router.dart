@@ -122,11 +122,36 @@ final router = GoRouter(
       ),
     ),
     GoRoute(
-      path: '/:locale/sales/reward-write',
+      path: '/:locale/sales/store-mission/new',
       builder: (context, state) => AppLayout(
         locale: Locale(state.pathParameters['locale']!),
         child: const RewardWritePage(),
       ),
+    ),
+    GoRoute(
+      path: '/:locale/sales/store-mission/:id/edit',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return AppLayout(
+          locale: Locale(state.pathParameters['locale']!),
+          child: RewardWritePage(
+            mission: extra?['mission'],
+            missionId: state.pathParameters['id'],
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/:locale/sales/reward-write',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return AppLayout(
+          locale: Locale(state.pathParameters['locale']!),
+          child: RewardWritePage(
+            mission: extra?['mission'],
+          ),
+        );
+      },
     ),
     GoRoute(
       path: '/:locale/platform/register',

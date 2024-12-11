@@ -18,17 +18,13 @@ class MissionStatusChip extends StatelessWidget {
         color = Colors.blue;
         label = '진행중';
         break;
-      case 'PENDING':
+      case 'SCHEDULED':
         color = Colors.orange;
-        label = '대기중';
+        label = '예약됨';
         break;
       case 'COMPLETED':
         color = Colors.green;
         label = '완료';
-        break;
-      case 'FAILED':
-        color = Colors.red;
-        label = '실패';
         break;
       default:
         color = Colors.grey;

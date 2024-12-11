@@ -147,7 +147,10 @@ class MissionDetailView extends StatelessWidget {
                   onPressed: () {
                     onClose?.call();
                     final locale = Localizations.localeOf(context).languageCode;
-                    context.go('/$locale/sales/mission/${mission.id}/edit');
+                    context.go(
+                      '/$locale/sales/store-mission/${mission.id}/edit',
+                      extra: {'mission': mission},
+                    );
                   },
                   child: const Text('수정'),
                 ),

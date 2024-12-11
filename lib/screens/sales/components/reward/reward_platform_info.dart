@@ -1,74 +1,63 @@
 import 'package:flutter/material.dart';
 import '../../../../models/platform/platform.dart';
 import '../reward_platform_field.dart';
-import '../reward_product_link_field.dart';
 import '../reward_input_field.dart';
+import '../reward_product_link_field.dart';
 import 'package:go_router/go_router.dart';
 
 class RewardPlatformInfo extends StatelessWidget {
   final List<Platform> platforms;
   final int? selectedPlatform;
-  final bool isLoadingPlatforms;
   final Function(int?) onPlatformChanged;
-  final TextEditingController productLinkController;
-  final String? selectedDomain;
   final List<Map<String, dynamic>> domains;
-  final bool isLoadingDomains;
+  final String? selectedDomain;
   final Function(String?) onDomainChanged;
+  final bool isLoadingPlatforms;
+  final bool isLoadingDomains;
+  final TextEditingController storeNameController;
+  final TextEditingController productLinkController;
   final TextEditingController keywordController;
   final TextEditingController productIdController;
-  final TextEditingController optionIdController;
 
   const RewardPlatformInfo({
-    super.key,
+    Key? key,
     required this.platforms,
     required this.selectedPlatform,
-    required this.isLoadingPlatforms,
     required this.onPlatformChanged,
-    required this.productLinkController,
-    required this.selectedDomain,
     required this.domains,
-    required this.isLoadingDomains,
+    required this.selectedDomain,
     required this.onDomainChanged,
+    required this.isLoadingPlatforms,
+    required this.isLoadingDomains,
+    required this.storeNameController,
+    required this.productLinkController,
     required this.keywordController,
     required this.productIdController,
-    required this.optionIdController,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: RewardPlatformField(
-                platforms: platforms,
-                selectedPlatform: selectedPlatform,
-                isLoading: isLoadingPlatforms,
-                onChanged: onPlatformChanged,
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: () {
-                final locale = Localizations.localeOf(context).languageCode;
-                context.push('/$locale/platform/register').then((_) {
-                  onPlatformChanged(null);
-                });
-              },
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text('플랫폼 추가'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ],
+        const Text(
+          '플랫폼 정보',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildPlatformDropdown(context),
+        const SizedBox(height: 16),
+        RewardInputField(
+          label: '스토어명',
+          controller: storeNameController,
+          placeholder: '스토어명을 입력하세요',
+          validator: (value) {
+            if (value?.isEmpty ?? true) return '스토어명을 입력해주세요';
+            return null;
+          },
         ),
         const SizedBox(height: 24),
         RewardProductLinkField(
@@ -81,43 +70,75 @@ class RewardPlatformInfo extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         RewardInputField(
-          label: '키워드',
+          label: '검색 키워드',
           controller: keywordController,
-          placeholder: '키워드를 입력하세요',
+          placeholder: '검색 키워드를 입력하세요',
           validator: (value) {
-            if (value?.isEmpty ?? true) return '키워드를 입력해주세요';
+            if (value?.isEmpty ?? true) return '검색 키워드를 입력해주세요';
             return null;
           },
         ),
         const SizedBox(height: 24),
-        Row(
-          children: [
-            Expanded(
-              child: RewardInputField(
-                label: '상품 ID',
-                controller: productIdController,
-                placeholder: '상품 ID를 입력하세요',
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return '상품 ID를 입력해주세요';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: RewardInputField(
-                label: '옵션 ID',
-                controller: optionIdController,
-                placeholder: '옵션 ID를 입력하세요',
-                validator: (value) {
-                  if (value?.isEmpty ?? true) return '옵션 ID를 입력해주세요';
-                  return null;
-                },
-              ),
-            ),
-          ],
+        RewardInputField(
+          label: '상품 ID',
+          controller: productIdController,
+          placeholder: '상품 ID를 입력하세요',
+          validator: (value) {
+            if (value?.isEmpty ?? true) return '상품 ID를 입력해주세요';
+            return null;
+          },
         ),
       ],
     );
   }
-} 
+
+  Widget _buildPlatformDropdown(BuildContext context) {
+    if (isLoadingPlatforms) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<int>(
+            value: selectedPlatform,
+            decoration: const InputDecoration(
+              labelText: '플랫폼',
+              border: OutlineInputBorder(),
+            ),
+            items: platforms.map((platform) {
+              return DropdownMenuItem<int>(
+                value: platform.id,
+                child: Text(platform.name),
+              );
+            }).toList(),
+            onChanged: onPlatformChanged,
+            validator: (value) {
+              if (value == null) return '플랫폼을 선택해주세요';
+              return null;
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton.icon(
+          onPressed: () {
+            final locale = Localizations.localeOf(context).languageCode;
+            context.push('/$locale/platform/register').then((_) {
+              onPlatformChanged(null);
+            });
+          },
+          icon: const Icon(Icons.add, size: 20),
+          label: const Text('플랫폼 추가'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).primaryColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
