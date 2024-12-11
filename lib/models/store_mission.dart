@@ -1,3 +1,5 @@
+import 'package:reward/models/store_mission/store_mission_response.dart';
+
 class StoreMission {
   final String id;
   final String title;
@@ -59,6 +61,42 @@ class StoreMission {
           .toList() ?? [],
     );
   }
+
+  StoreMissionResponse toResponse() {
+    return StoreMissionResponse(
+      id: int.parse(id),
+      status: status,
+      platform: PlatformInfo(
+        id: 0,
+        name: platform,
+        displayName: platform,  // Using platform name as display name
+        status: 'ACTIVE',
+        createdAt: DateTime.now(),  // Using current time as creation time
+      ),
+      reward: RewardInfo(
+        rewardName: title,
+        rewardAmount: rewardAmount,
+        startDate: startDate,
+        endDate: endDate,
+        maxRewardsPerDay: 0,
+        status: status,
+      ),
+      store: StoreInfo(
+        storeName: productName,
+        productLink: productUrl,
+        keyword: keyword,
+        productId: '',
+        optionId: '',
+      ),
+      registrant: RegistrantInfo(
+        registrantId: 0,
+        registrantName: '',
+      ),
+      tags: [],
+      totalRewardUsage: totalUsageCount,
+      remainingRewardBudget: 0,
+    );
+  }
 }
 
 class RewardUsage {
@@ -85,4 +123,4 @@ class RewardUsage {
       status: json['status'],
     );
   }
-} 
+}

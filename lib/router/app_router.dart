@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/auth/login_page.dart';
 import '../screens/auth/signin_page.dart';
 import '../screens/auth/auth_callback_page.dart';
-import '../screens/home/home_page.dart';
+import '../screens/layout/app_layout.dart';
 import '../screens/sales/store_mission_list_page.dart';
 import '../screens/sales/reward_write_page.dart';
 import '../screens/platform/platform_register_page.dart';
@@ -102,47 +102,67 @@ final router = GoRouter(
       path: '/:locale/signin',
       builder: (context, state) => const SignInPage(),
     ),
-    GoRoute(
-      path: '/:locale/home',
-      builder: (context, state) => HomePage(
-        locale: Locale(state.pathParameters['locale']!),
-      ),
-    ),
+ 
     GoRoute(
       path: '/:locale/auth/callback',
       builder: (context, state) => const AuthCallbackPage(),
     ),
     GoRoute(
+      path: '/:locale/home',
+      builder: (context, state) => AppLayout(
+        locale: Locale(state.pathParameters['locale']!),
+        child: const StoreMissionListPage(),
+      ),
+    ),
+    GoRoute(
       path: '/:locale/sales/store-mission',
-      builder: (context, state) => const StoreMissionListPage(),
+      builder: (context, state) => AppLayout(
+        locale: Locale(state.pathParameters['locale']!),
+        child: const StoreMissionListPage(),
+      ),
     ),
     GoRoute(
       path: '/:locale/sales/reward-write',
-      builder: (context, state) => const RewardWritePage(),
+      builder: (context, state) => AppLayout(
+        locale: Locale(state.pathParameters['locale']!),
+        child: const RewardWritePage(),
+      ),
     ),
     GoRoute(
       path: '/:locale/platform/register',
-      builder: (context, state) => const PlatformRegisterPage(),
+      builder: (context, state) => AppLayout(
+        locale: Locale(state.pathParameters['locale']!),
+        child: const PlatformRegisterPage(),
+      ),
     ),
     GoRoute(
       path: '/:locale/tags/:tagId/share',
-      builder: (context, state) => TagSharePage(
-        tagId: state.pathParameters['tagId']!,
+      builder: (context, state) => AppLayout(
+        locale: Locale(state.pathParameters['locale']!),
+        child: TagSharePage(
+          tagId: state.pathParameters['tagId']!,
+        ),
       ),
     ),
     GoRoute(
       path: '/:locale/payments/naver',
       builder: (context, state) {
         final extra = state.extra as Map<String, dynamic>? ?? {};
-        return NaverPayScreen(
-          amount: (extra['amount'] as num?)?.toDouble() ?? 0.0,
-          itemName: extra['itemName'] as String? ?? '리워드 예산 충전',
+        return AppLayout(
+          locale: Locale(state.pathParameters['locale']!),
+          child: NaverPayScreen(
+            amount: (extra['amount'] as num?)?.toDouble() ?? 0.0,
+            itemName: extra['itemName'] as String? ?? '리워드 예산 충전',
+          ),
         );
       },
     ),
     GoRoute(
       path: '/:locale/charge',
-      builder: (context, state) => const ChargeScreen(),
+      builder: (context, state) => AppLayout(
+        locale: Locale(state.pathParameters['locale']!),
+        child: const ChargeScreen(),
+      ),
     ),
   ],
 );
