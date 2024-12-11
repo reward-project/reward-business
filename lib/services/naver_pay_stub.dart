@@ -1,6 +1,5 @@
 // naver_pay_stub.dart
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../config/app_config.dart';
 import 'naver_pay_interface.dart';

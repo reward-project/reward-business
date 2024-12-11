@@ -76,6 +76,7 @@ class _LoginPageState extends State<LoginPage> {
         data: {
           "email": _emailController.text.trim(),
           "password": _passwordController.text.trim(),
+          "role": "business"
         },
         options: Options(
           contentType: Headers.jsonContentType,

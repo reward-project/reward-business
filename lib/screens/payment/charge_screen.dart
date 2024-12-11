@@ -1,16 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../services/naver_pay_stub.dart';
+import '../../services/naver_pay_service.dart';
 
-class ChargeScreen extends StatelessWidget {
+class ChargeScreen extends StatefulWidget {
   const ChargeScreen({super.key});
 
-  void _handleCharge(BuildContext context, double amount) {
-    NaverPayImplementation().processPayment(
-      context,
-      amount,
-      '리워드 예산 충전',
-    );
+  @override
+  State<ChargeScreen> createState() => _ChargeScreenState();
+}
+
+class _ChargeScreenState extends State<ChargeScreen> {
+  final _naverPayService = NaverPayService();
+
+  Future<void> _handleCharge(BuildContext context, double amount) async {
+    try {
+      await _naverPayService.startPayment(
+        context,
+        amount: amount,
+        itemName: '리워드 예산 충전',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('결제 처리 중 오류가 발생했습니다: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   Widget _buildChargeButton(BuildContext context, double amount) {
@@ -44,4 +59,4 @@ class ChargeScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

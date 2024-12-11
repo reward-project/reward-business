@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:reward/models/tag/tag_share_request.dart';
 import 'package:reward/services/tag_service.dart';
-import 'package:reward/services/tag_service.dart';
-import 'package:reward/models/tag/tag_share_request.dart';
 
 class TagSharePage extends StatefulWidget {
   final String tagId;

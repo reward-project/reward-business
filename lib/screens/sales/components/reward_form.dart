@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:reward/models/platform/platform.dart';
 import '../../../services/platform_service.dart';
-import '../../../utils/formatters/thousands_separator_input_formatter.dart';
 import 'reward/reward_basic_info.dart';
 import 'reward/reward_platform_info.dart';
 import 'reward/reward_amount_info.dart';

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../reward_input_field.dart';
-import '../calendar/calendar_date_range_picker.dart';
 
 class RewardDateInfo extends StatelessWidget {
   final TextEditingController startDateController;
