@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/dio_service.dart';
 import 'package:intl/intl.dart'; // Added import for DateFormat
+import 'package:dio/dio.dart';
 
 class StoreMissionCommandService {
   static Future<void> createStoreMission({
@@ -106,46 +107,69 @@ class StoreMissionCommandService {
     required int id,
   }) async {
     try {
-      final locale = Localizations.localeOf(context).languageCode;
-      final response = await DioService.instance.delete<Map<String, dynamic>>('/store-missions/$id');
-
-      if (response.statusCode == 200 && response.data?['success'] == true) {
+      await DioService.instance.delete('/store-missions/$id');
+      
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.data?['message'] ?? '리워드가 성공적으로 삭제되었습니다.')),
+          const SnackBar(content: Text('미션이 삭제되었습니다.')),
         );
-        context.go('/$locale/sales/store-mission');
-      } else {
-        throw Exception(response.data?['message'] ?? '리워드 삭제에 실패했습니다.');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      if (context.mounted) {
+        String errorMessage = '미션 삭제 중 오류가 발생했습니다';
+        
+        if (e is DioException && e.response?.data != null) {
+          final responseData = e.response!.data;
+          if (responseData['message'] != null) {
+            errorMessage = responseData['message'];
+          }
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      rethrow;
     }
   }
 
   static Future<void> deleteStoreMissions({
     required BuildContext context,
-    required Set<int> ids,
+    required List<int> ids,
   }) async {
     try {
-      final locale = Localizations.localeOf(context).languageCode;
-      final responses = await Future.wait(
-        ids.map((id) => DioService.instance.delete<Map<String, dynamic>>('/store-missions/$id')),
+      await DioService.instance.delete(
+        '/store-missions',
+        data: {'missionIds': ids},
       );
-
-      if (responses.every((response) => response.statusCode == 200 && response.data?['success'] == true)) {
+      
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('선택한 리워드가 성공적으로 삭제되었습니다.')),
+          const SnackBar(content: Text('선택한 미션이 삭제되었습니다.')),
         );
-        context.go('/$locale/sales/store-mission');
-      } else {
-        throw Exception('일부 리워드 삭제에 실패했습니다.');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      if (context.mounted) {
+        String errorMessage = '미션 삭제 중 오류가 발생했습니다';
+        
+        if (e is DioException && e.response?.data != null) {
+          final responseData = e.response!.data;
+          if (responseData['message'] != null) {
+            errorMessage = responseData['message'];
+          }
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      rethrow;
     }
   }
 

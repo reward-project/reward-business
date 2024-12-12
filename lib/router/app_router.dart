@@ -13,6 +13,7 @@ import '../providers/auth_provider.dart';
 import '../screens/tags/tag_share_page.dart';
 import '../screens/payment/naver_pay_screen.dart';
 import '../screens/payment/charge_screen.dart';
+import '../screens/finance/transaction_history_screen.dart';
 
 final router = GoRouter(
   initialLocation: '/',
@@ -187,6 +188,13 @@ final router = GoRouter(
       builder: (context, state) => AppLayout(
         locale: Locale(state.pathParameters['locale']!),
         child: const ChargeScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/:locale/finance/transactions',
+      builder: (context, state) => AppLayout(
+        locale: Locale(state.pathParameters['locale']!),
+        child: const TransactionHistoryScreen(),
       ),
     ),
   ],
