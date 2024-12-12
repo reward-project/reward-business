@@ -6,6 +6,9 @@ import 'package:reward/screens/sales/widgets/mission_detail_view.dart';
 import 'package:reward/screens/sales/widgets/mission_stats_card.dart';
 import 'package:reward/screens/sales/widgets/mission_table.dart';
 import 'package:reward/services/store_mission_query_service.dart';
+import 'widgets/mission_filter_section.dart';
+import 'widgets/mission_filter_dialog.dart';
+import 'widgets/mission_sort_dialog.dart';
 
 class StoreMissionListPage extends StatefulWidget {
   const StoreMissionListPage({super.key});
@@ -22,6 +25,11 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
   StoreMissionStats? _stats;
   String _selectedPlatform = '전체';
   DateTimeRange? _selectedDateRange;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  String? _selectedStatus;
+  MissionSortField? _sortField;
+  bool _isAscending = true;
 
   @override
   void initState() {
@@ -67,27 +75,61 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
     );
   }
 
-  Widget _buildFilterSection() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        OutlinedButton.icon(
-          icon: const Icon(Icons.filter_list),
-          label: const Text('필터'),
-          onPressed: () {
-            // TODO: 필터 다이얼로그 표시
-          },
-        ),
-        const SizedBox(width: 8),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.sort),
-          label: const Text('정렬'),
-          onPressed: () {
-            // TODO: 정렬 다이얼로그 표시
-          },
-        ),
-      ],
-    );
+  void _applyFilters() {
+    setState(() {
+      _filteredMissions = _missions.where((mission) {
+        // 상태 필터
+        if (_selectedStatus != null && mission.status != _selectedStatus) {
+          return false;
+        }
+
+        // 날짜 필터
+        if (_startDate != null && mission.reward.startDate.isBefore(_startDate!)) {
+          return false;
+        }
+        if (_endDate != null && mission.reward.endDate.isAfter(_endDate!)) {
+          return false;
+        }
+
+        return true;
+      }).toList();
+      if (_sortField != null) {
+        _applySorting();
+      }
+    });
+  }
+
+  void _applySorting() {
+    if (_sortField == null) return;
+    
+    setState(() {
+      _filteredMissions.sort((a, b) {
+        int comparison;
+        switch (_sortField!) {
+          case MissionSortField.rewardAmount:
+            comparison = a.reward.rewardAmount.compareTo(b.reward.rewardAmount);
+            break;
+          case MissionSortField.startDate:
+            comparison = a.reward.startDate.compareTo(b.reward.startDate);
+            break;
+          case MissionSortField.endDate:
+            comparison = a.reward.endDate.compareTo(b.reward.endDate);
+            break;
+          case MissionSortField.createdAt:
+            if (a.createdAt == null && b.createdAt == null) {
+              comparison = 0;
+            } else if (a.createdAt == null) {
+              comparison = -1;  // null을 가장 앞으로
+            } else if (b.createdAt == null) {
+              comparison = 1;   // null을 가장 앞으로
+            } else {
+              comparison = a.createdAt!.compareTo(b.createdAt!);
+            }
+            break;
+        }
+        return _isAscending ? comparison : -comparison;
+      });
+    });
   }
 
   @override
@@ -130,7 +172,54 @@ class _StoreMissionListPageState extends State<StoreMissionListPage> {
                             ),
                       ),
                       const Spacer(),
-                      _buildFilterSection(),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.filter_list),
+                            label: const Text('필터'),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => MissionFilterDialog(
+                                  startDate: _startDate,
+                                  endDate: _endDate,
+                                  selectedStatus: _selectedStatus,
+                                  onApply: (start, end, status) {
+                                    setState(() {
+                                      _startDate = start;
+                                      _endDate = end;
+                                      _selectedStatus = status;
+                                    });
+                                    _applyFilters();
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.sort),
+                            label: const Text('정렬'),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => MissionSortDialog(
+                                  currentSortField: _sortField,
+                                  isAscending: _isAscending,
+                                  onApply: (field, ascending) {
+                                    setState(() {
+                                      _sortField = field;
+                                      _isAscending = ascending;
+                                    });
+                                    _applySorting();
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 24),

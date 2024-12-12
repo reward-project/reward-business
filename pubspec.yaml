@@ -18,7 +18,7 @@ dependencies:
   go_router: ^13.0.1
   provider: ^6.1.1
   dio: ^5.4.1
-  flutter_svg: ^2.0.10
+  flutter_svg: ^2.0.9
   google_sign_in: ^6.1.6
   url_launcher: ^6.2.2
   shared_preferences: ^2.3.3
@@ -43,6 +43,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/logo_navergr_large.svg
 
   fonts:
     - family: NotoSansKR

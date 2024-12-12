@@ -225,29 +225,14 @@ class MissionTable extends StatelessWidget {
                       value: 'view',
                       child: Text('상세보기'),
                     ),
-                    if (isActive || isScheduled) ...[
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('수정'),
-                      ),
-                    ],
-                    if (isScheduled) ...[
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('삭제'),
-                      ),
-                    ],
-                    if (isActive) ...[
-                      const PopupMenuItem(
-                        value: 'ACTIVE',
-                        child: Text('진행중으로 변경'),
-                      ),
-                    ] else if (isScheduled) ...[
-                      const PopupMenuItem(
-                        value: 'ACTIVE',
-                        child: Text('진행중으로 변경'),
-                      ),
-                    ],
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Text('수정'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('삭제'),
+                    ),
                   ],
                   onSelected: (value) async {
                     if (value == 'view') {
@@ -258,14 +243,7 @@ class MissionTable extends StatelessWidget {
                       context.go('/$locale/sales/reward-write',
                           extra: {'mission': mission});
                     } else if (value == 'delete') {
-                      // _handleDeleteids: selectedMissionIds.toList()(context, mission);
-                    } else {
-                      onSelectionChanged(
-                        selectedMissionIds
-                            .where((id) => id != mission.id)
-                            .toSet(),
-                      );
-                      onRefresh();
+                      _handleDelete(context, mission);
                     }
                   },
                 ),
@@ -289,12 +267,20 @@ class MissionTable extends StatelessWidget {
             child: const Text('취소'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
-              StoreMissionCommandService.deleteStoreMission(
-                context: context,
-                id: mission.id,
-              );
+              try {
+                await StoreMissionCommandService.deleteStoreMission(
+                  context: context,
+                  id: mission.id,
+                );
+                onSelectionChanged(
+                  selectedMissionIds.where((id) => id != mission.id).toSet(),
+                );
+                onRefresh();
+              } catch (e) {
+                debugPrint('Error deleting mission: $e');
+              }
             },
             child: const Text('삭제'),
           ),
@@ -337,8 +323,7 @@ class MissionTable extends StatelessWidget {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('미션 삭제'),
-                  content:
-                      Text('선택한 ${selectedMissionIds.length}개의 미션을 삭제하시겠습니까?'),
+                  content: Text('선택한 ${selectedMissionIds.length}개의 미션을 삭제하시겠습니까?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -353,12 +338,16 @@ class MissionTable extends StatelessWidget {
               );
 
               if (confirm == true) {
-                // await StoreMissionCommandService.deleteStoreMissions(
-                  // context: context,
-                  // ids: selectedMissionIds.toList(),
-                // );
-                onSelectionChanged({});
-                onRefresh();
+                try {
+                  await StoreMissionCommandService.deleteStoreMissions(
+                    context: context,
+                    ids: selectedMissionIds.toList(),
+                  );
+                  onSelectionChanged({});
+                  onRefresh();
+                } catch (e) {
+                  debugPrint('Error deleting missions: $e');
+                }
               }
             },
           ),

@@ -54,9 +54,27 @@ class AppLayout extends StatelessWidget {
             ),
           ),
           ExpansionTile(
+            leading: const Icon(Icons.monetization_on),
+            title: const Text('재무 관리'),
+            initiallyExpanded: true,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.account_balance_wallet),
+                title: const Text('리워드 충전'),
+                contentPadding: const EdgeInsets.only(left: 72),
+                onTap: () => context.go('/$currentLocale/charge'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.history),
+                title: const Text('거래 내역'),
+                contentPadding: const EdgeInsets.only(left: 72),
+                onTap: () => context.go('/$currentLocale/finance/transactions'),
+              ),
+            ],
+          ),
+          ExpansionTile(
             leading: const Icon(Icons.list),
             title: const Text('리워드 관리'),
-            initiallyExpanded: true,
             children: [
               ListTile(
                 leading: const Icon(Icons.view_list),
@@ -72,11 +90,6 @@ class AppLayout extends StatelessWidget {
                 onTap: () => context.go('/$currentLocale/sales/reward-write'),
               ),
             ],
-          ),
-          ListTile(
-            leading: const Icon(Icons.account_balance_wallet),
-            title: const Text('리워드 충전'),
-            onTap: () => context.go('/$currentLocale/charge'),
           ),
           ListTile(
             leading: const Icon(Icons.settings),
