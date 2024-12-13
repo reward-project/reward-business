@@ -23,9 +23,11 @@ class TransactionHistory {
     return TransactionHistory(
       id: json['id'],
       amount: (json['amount'] ?? 0).toDouble(),
-      type: json['type'],
-      description: json['description'],
-      createdAt: DateTime.parse(json['timestamp']),
+      type: json['type'] ?? '',
+      description: json['description'] ?? '',
+      createdAt: json['createdAt'] != null ? 
+        DateTime.tryParse(json['createdAt']) ?? DateTime.now() : 
+        DateTime.now(),
       balance: (json['balance'] ?? 0).toDouble(),
     );
   }
